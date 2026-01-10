@@ -12,8 +12,8 @@ public class Main {
 
         // Lança o Dashboard
         SwingUtilities.invokeLater(() -> {
-            Dashboard telaPrincipal = new Dashboard();
-            telaPrincipal.setVisible(true);
+Dashboard dash = new Dashboard("Stack");
+dash.setVisible(true);
         });
     }
 }
