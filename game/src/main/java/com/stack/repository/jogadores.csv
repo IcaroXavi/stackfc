@@ -4,18 +4,18 @@ id,nome,posicao,idade,defesa,ataque,total,clube,status
 3,Alves,Lateral Esquerdo,16,4,6,10,1,1
 4,Cícero,Lateral Direito,30,4,6,10,1,1
 5,Careca,Lateral Esquerdo,35,6,4,10,1,2
-6,Betão,Lateral Direito,25,6,2,8,1,1
+6,Betão,Lateral Direito,25,6,2,8,1,3
 7,José,Zagueiro,35,8,2,10,1,1
 8,Figo,Zagueiro,28,4,4,8,1,1
-9,Daniel,Zagueiro,28,6,6,12,1,1
-10,Odvan,Zagueiro,27,8,2,10,1,1
+9,Daniel,Zagueiro,28,6,6,12,1,2
+10,Odvan,Zagueiro,27,8,2,10,1,3
 11,Romário,Meio Campo,26,6,2,8,1,1
 12,Lindomar,Meio Campo,24,6,2,8,1,1
 13,Wendell,Meio Campo,30,6,2,8,1,1
 14,Gabriel,Meio Campo,31,6,2,8,1,1
 15,Sousa,Meio Campo,35,2,6,8,1,2
-16,Fernandão,Meio Campo,25,2,6,8,1,1
-17,Barriga,Meio Campo,23,2,6,8,1,1
+16,Fernandão,Meio Campo,25,2,6,8,1,3
+17,Barriga,Meio Campo,23,2,6,8,1,3
 18,Walter,Meio Campo,36,2,6,8,1,2
 19,Gustavo ,Atacante,35,2,6,8,1,1
 20,Afonso ,Atacante,30,2,6,8,1,1
