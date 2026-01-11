@@ -24,7 +24,7 @@ public class Partida extends JPanel {
         setLayout(new BorderLayout());
         setBackground(new Color(10, 15, 30));
 
-        // --- CABEÇALHO (ORIGINAL) ---
+        // --- CABEÇALHO ---
         JPanel headerSuperior = new JPanel();
         headerSuperior.setLayout(new BoxLayout(headerSuperior, BoxLayout.Y_AXIS));
         headerSuperior.setBackground(new Color(15, 25, 45));
@@ -72,10 +72,9 @@ public class Partida extends JPanel {
         containerCentro.setOpaque(false);
         containerCentro.setBorder(BorderFactory.createEmptyBorder(10, 15, 0, 15));
 
-        // Espaço inicial para descer as tabelas
         containerCentro.add(Box.createVerticalStrut(10));
 
-        // Card de Lances
+        // Painel de Lances
         JPanel cardLance = new JPanel(new BorderLayout());
         cardLance.setPreferredSize(new Dimension(500, 50));
         cardLance.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
@@ -86,21 +85,23 @@ public class Partida extends JPanel {
         cardLance.add(lblLance, BorderLayout.CENTER);
         containerCentro.add(cardLance);
 
-        // TABELA TITULARES
-        containerCentro.add(criarRotuloSecao("TITULARES (STATUS 1)"));
+        // Espaço entre Lances e Tabela
+        containerCentro.add(Box.createVerticalStrut(15));
+
+        // TABELA TITULARES (Sem rótulo superior)
         modeloTitulares = criarModeloNaoEditavel();
         tabelaTitulares = new JTable(modeloTitulares);
         containerCentro.add(configurarEScrollar(tabelaTitulares, 270));
 
+        // RÓTULO RESERVAS (Alinhado à esquerda)
+        containerCentro.add(criarRotuloEsquerdo("RESERVAS"));
+
         // TABELA RESERVAS
-        containerCentro.add(criarRotuloSecao("RESERVAS (STATUS 2)"));
         modeloReservas = criarModeloNaoEditavel();
         tabelaReservas = new JTable(modeloReservas);
         containerCentro.add(configurarEScrollar(tabelaReservas, 160));
 
-        // Glue para empurrar tudo para cima e manter o tamanho fixo das tabelas
         containerCentro.add(Box.createVerticalGlue());
-
         add(containerCentro, BorderLayout.CENTER);
 
         // --- BOTÃO INFERIOR ---
@@ -134,14 +135,12 @@ public class Partida extends JPanel {
         tabela.setFillsViewportHeight(true);
         tabela.setSelectionBackground(new Color(40, 50, 70));
 
-        // Cabeçalho
         JTableHeader header = tabela.getTableHeader();
         header.setBackground(new Color(25, 30, 50));
         header.setForeground(new Color(150, 160, 180));
         header.setFont(new Font("Segoe UI", Font.BOLD, 11));
         ((DefaultTableCellRenderer)header.getDefaultRenderer()).setHorizontalAlignment(JLabel.CENTER);
 
-        // Colunas
         tabela.getColumnModel().getColumn(0).setPreferredWidth(45);
         tabela.getColumnModel().getColumn(0).setMaxWidth(45);
         tabela.getColumnModel().getColumn(1).setPreferredWidth(200);
@@ -155,20 +154,22 @@ public class Partida extends JPanel {
         JScrollPane scroll = new JScrollPane(tabela);
         scroll.setPreferredSize(new Dimension(400, altura));
         scroll.setMinimumSize(new Dimension(400, altura));
-        scroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, altura)); // TRAVA A ALTURA AQUI
+        scroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, altura));
         scroll.setBorder(BorderFactory.createLineBorder(new Color(40, 50, 70)));
         scroll.getViewport().setBackground(new Color(15, 20, 35));
-        
         return scroll;
     }
 
-    private JLabel criarRotuloSecao(String texto) {
+    private JPanel criarRotuloEsquerdo(String texto) {
+        JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        p.setOpaque(false);
         JLabel label = new JLabel(texto);
         label.setForeground(new Color(100, 110, 130));
         label.setFont(new Font("Segoe UI", Font.BOLD, 10));
-        label.setBorder(BorderFactory.createEmptyBorder(15, 5, 5, 0));
-        label.setAlignmentX(Component.LEFT_ALIGNMENT);
-        return label;
+        p.setBorder(BorderFactory.createEmptyBorder(15, 0, 5, 0));
+        p.add(label);
+        p.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        return p;
     }
 
     private void carregarDados(String idClube, DefaultTableModel modTit, DefaultTableModel modRes) {
@@ -189,8 +190,10 @@ public class Partida extends JPanel {
 
     private void abrirModalFlamengo() {
         JDialog modal = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Escalação: Flamengo", true);
-        JPanel p = new JPanel(); p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
-        p.setBackground(new Color(10, 15, 30)); p.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JPanel p = new JPanel(); 
+        p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+        p.setBackground(new Color(10, 15, 30)); 
+        p.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
         
         DefaultTableModel mTitB = criarModeloNaoEditavel();
         DefaultTableModel mResB = criarModeloNaoEditavel();
@@ -199,10 +202,16 @@ public class Partida extends JPanel {
         JTable tT = new JTable(mTitB); 
         JTable tR = new JTable(mResB); 
         
-        p.add(criarRotuloSecao("TITULARES (FLAMENGO)")); p.add(configurarEScrollar(tT, 250));
-        p.add(criarRotuloSecao("RESERVAS (FLAMENGO)")); p.add(configurarEScrollar(tR, 140));
+        // Modal Flamengo: Sem título para titulares, apenas Reservas
+        p.add(configurarEScrollar(tT, 275)); // Altura levemente maior para evitar scroll
+        p.add(criarRotuloEsquerdo("RESERVAS")); 
+        p.add(configurarEScrollar(tR, 165));
         
-        modal.add(p); modal.pack(); modal.setLocationRelativeTo(this); modal.setVisible(true);
+        modal.add(p); 
+        modal.pack(); 
+        modal.setSize(430, 550); // Tamanho fixo maior para garantir visibilidade total
+        modal.setLocation(745, 280);
+        modal.setVisible(true);
     }
 
     private String abreviar(String p) {
@@ -218,12 +227,14 @@ public class Partida extends JPanel {
             lblStatusTempo.setText(isSegundoTempo ? "2º TEMPO" : "1º TEMPO");
             btnAcao.setText("PAUSAR PARTIDA");
             btnAcao.setBackground(new Color(120, 50, 20));
-            if(timer == null) timer = new Timer(1000, e -> {
-                segundosCorridos++;
-                lblCronometro.setText(String.valueOf(segundosCorridos));
-                if(segundosCorridos == 45 && !isSegundoTempo) finalizarTempo();
-                else if(segundosCorridos == 90) finalizarPartida();
-            });
+            if(timer == null) {
+                timer = new Timer(1000, e -> {
+                    segundosCorridos++;
+                    lblCronometro.setText(String.valueOf(segundosCorridos));
+                    if(segundosCorridos == 45 && !isSegundoTempo) finalizarTempo();
+                    else if(segundosCorridos == 90) finalizarPartida();
+                });
+            }
             timer.start();
         } else { pausarPartida(); }
     }
