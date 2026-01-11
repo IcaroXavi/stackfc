@@ -15,7 +15,13 @@ public class Partida extends JPanel {
     private JButton btnAcao, btnTaticas, btnVerAdversario;
     private JTextArea logMotor; 
     private Timer timer;
-    private int segundosCorridos = 0;
+    
+    // VARIÁVEIS DE TEMPO ACELERADO
+    private int minutosSimulados = 0;
+    private int contadorTicks = 0;
+    private int acrescimosTempo = 0;
+    private boolean isAcrescimos = false;
+    
     private boolean isSegundoTempo = false;
     private boolean jogoIniciado = false;
     private boolean partidaFinalizada = false;
@@ -38,12 +44,11 @@ public class Partida extends JPanel {
         JPanel painelHeader = new JPanel();
         painelHeader.setLayout(new BoxLayout(painelHeader, BoxLayout.Y_AXIS));
         painelHeader.setBackground(new Color(15, 25, 45));
-        painelHeader.setBorder(BorderFactory.createEmptyBorder(5, 20, 10, 20)); // Padding reduzido
+        painelHeader.setBorder(BorderFactory.createEmptyBorder(5, 20, 10, 20));
 
-        // BARRA TOPO (Público, Status, Cronômetro)
         JPanel barraTopo = new JPanel(new BorderLayout());
         barraTopo.setOpaque(false);
-        barraTopo.setPreferredSize(new Dimension(0, 25)); // Altura reduzida
+        barraTopo.setPreferredSize(new Dimension(0, 25));
 
         lblPublico = new JLabel("Público: 13.537");
         lblPublico.setForeground(new Color(150, 160, 180));
@@ -63,17 +68,16 @@ public class Partida extends JPanel {
         barraTopo.add(lblStatusTempo, BorderLayout.CENTER);
         barraTopo.add(lblCronometro, BorderLayout.EAST);
 
-        // PLACAR REDUZIDO
         JPanel painelPlacar = new JPanel(new GridLayout(1, 3));
         painelPlacar.setOpaque(false);
-        painelPlacar.setPreferredSize(new Dimension(0, 45)); // Altura reduzida de 60 para 45
+        painelPlacar.setPreferredSize(new Dimension(0, 45));
         
         JLabel timeA = new JLabel("MEU TIME", SwingConstants.LEFT);
         timeA.setForeground(Color.WHITE); timeA.setFont(new Font("Segoe UI", Font.BOLD, 16));
         
         lblPlacar = new JLabel("0 - 0", SwingConstants.CENTER);
         lblPlacar.setForeground(new Color(226, 242, 0));
-        lblPlacar.setFont(new Font("Segoe UI", Font.BOLD, 28)); // Fonte levemente menor
+        lblPlacar.setFont(new Font("Segoe UI", Font.BOLD, 28));
 
         JLabel timeB = new JLabel("FLAMENGO", SwingConstants.RIGHT);
         timeB.setForeground(new Color(255, 80, 80));
@@ -82,7 +86,7 @@ public class Partida extends JPanel {
         painelPlacar.add(timeA); painelPlacar.add(lblPlacar); painelPlacar.add(timeB);
 
         painelHeader.add(barraTopo);
-        painelHeader.add(Box.createVerticalStrut(5)); // Espaço reduzido
+        painelHeader.add(Box.createVerticalStrut(5));
         painelHeader.add(painelPlacar);
         add(painelHeader, BorderLayout.NORTH);
 
@@ -92,7 +96,6 @@ public class Partida extends JPanel {
         painelCentral.setOpaque(false);
         painelCentral.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
 
-        // Tabelas
         JPanel containerTabelas = new JPanel(new GridLayout(1, 2, 15, 0));
         containerTabelas.setOpaque(false);
         containerTabelas.setMaximumSize(new Dimension(Integer.MAX_VALUE, 240));
@@ -105,7 +108,6 @@ public class Partida extends JPanel {
         tabelaAdversario = new JTable(modeloAdversario);
         containerTabelas.add(configurarTabelaFinal(tabelaAdversario));
 
-        // PAINEL DE LANCES
         JPanel containerLance = new JPanel(new BorderLayout());
         containerLance.setBackground(Color.BLACK);
         containerLance.setPreferredSize(new Dimension(0, 40));
@@ -117,14 +119,13 @@ public class Partida extends JPanel {
         lblLance.setFont(new Font("Segoe UI", Font.BOLD, 14));
         containerLance.add(lblLance);
 
-        // Log Detalhado
         logMotor = new JTextArea(10, 30);
         logMotor.setBackground(new Color(5, 10, 20));
-        logMotor.setForeground(new Color(0, 210, 255)); // Azul claro para melhor leitura
+        logMotor.setForeground(new Color(0, 210, 255));
         logMotor.setFont(new Font("Monospaced", Font.PLAIN, 11));
         logMotor.setEditable(false);
         JScrollPane scrollLog = new JScrollPane(logMotor);
-        scrollLog.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(40, 50, 80)), "LOG DETALHADO DA PARTIDA", 0, 0, null, Color.GRAY));
+        scrollLog.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(40, 50, 80)), "MOTOR DE JOGO (REAL-TIME)", 0, 0, null, Color.GRAY));
 
         painelCentral.add(containerTabelas);
         painelCentral.add(Box.createVerticalStrut(10));
@@ -134,7 +135,6 @@ public class Partida extends JPanel {
 
         add(painelCentral, BorderLayout.CENTER);
 
-        // --- RODAPÉ ---
         JPanel footer = new JPanel(new GridLayout(1, 3, 10, 0));
         footer.setBackground(new Color(15, 25, 45));
         footer.setPreferredSize(new Dimension(0, 50));
@@ -152,7 +152,7 @@ public class Partida extends JPanel {
     }
 
     private void adicionarLog(String msg) {
-        logMotor.append(" [" + segundosCorridos + "'] " + msg + "\n");
+        logMotor.append(" [" + minutosSimulados + "'] " + msg + "\n");
         logMotor.setCaretPosition(logMotor.getDocument().getLength());
     }
 
@@ -177,43 +177,74 @@ public class Partida extends JPanel {
                     }
                 }
             }
-            adicionarLog("SISTEMA: Equipes prontas no vestiário.");
-            adicionarLog("FORÇA MEU TIME: " + (atkTotalMeuTime + defTotalMeuTime) + " (A:" + atkTotalMeuTime + " D:" + defTotalMeuTime + ")");
-            adicionarLog("FORÇA ADVERSÁRIO: " + (atkTotalAdv + defTotalAdv) + " (A:" + atkTotalAdv + " D:" + defTotalAdv + ")");
+            adicionarLog("SISTEMA: Equipes em campo.");
         } catch (Exception e) { adicionarLog("ERRO: Banco de dados inacessível."); }
     }
 
     private void atualizarTempo() {
-        segundosCorridos++;
-        lblCronometro.setText(segundosCorridos + "'");
-        processarMotorJogo();
+        contadorTicks++;
+        // Agora ambos os tempos vão até 45' antes dos acréscimos
+        int limiteTempo = 45;
+        
+        if (minutosSimulados < limiteTempo) {
+            minutosSimulados++;
+            lblCronometro.setText(minutosSimulados + "'");
+        } else {
+            if (!isAcrescimos) {
+                isAcrescimos = true;
+                // Sorteio invisível (3 a 7 minutos)
+                acrescimosTempo = (int)(Math.random() * 5) + 3; 
+                adicionarLog("ÁRBITRO: Placa de acréscimos levantada!");
+            }
+            minutosSimulados++;
+            // Texto fixo durante o período extra
+            lblCronometro.setText("Acréscimos");
+            lblCronometro.setForeground(new Color(255, 200, 0)); // Cor de alerta
+        }
 
-        if (segundosCorridos == 45 && !isSegundoTempo) {
-            pausarPartida();
+        // Sorteio de Lance (A cada 4 ticks = ~2 segundos reais)
+        if (contadorTicks % 4 == 0) {
+            processarMotorJogo();
+        } else {
+            String[] frasesAmbientacao = {"Pressão na saída de bola...", "Torcida canta alto!", "Jogo truncado.", "Clima tenso!"};
+            adicionarLog("RITMO: " + frasesAmbientacao[(int)(Math.random()*frasesAmbientacao.length)]);
+        }
+
+        // Fim do tempo (normal + sorteio invisível)
+        if (isAcrescimos && (minutosSimulados >= limiteTempo + acrescimosTempo)) {
+            finalizarTempo();
+        }
+    }
+
+    private void finalizarTempo() {
+        pausarPartida();
+        isAcrescimos = false;
+        lblCronometro.setForeground(Color.WHITE); // Volta a cor original
+        
+        if (!isSegundoTempo) {
             isSegundoTempo = true;
+            minutosSimulados = 0; // RESET para o segundo tempo
+            lblCronometro.setText("0'"); // Visual reset
             btnAcao.setText("INICIAR 2º TEMPO");
             lblStatusTempo.setText("INTERVALO");
-            adicionarLog("--- ÁRBITRO APITA: FIM DO PRIMEIRO TEMPO ---");
-        } else if (segundosCorridos >= 90) {
-            timer.stop();
+            adicionarLog("--- INTERVALO: Fim do 1º Tempo ---");
+        } else {
             partidaFinalizada = true;
             lblStatusTempo.setText("ENCERRADO");
             btnAcao.setText("SAIR");
             btnAcao.setBackground(new Color(50, 50, 60));
-            adicionarLog("--- ÁRBITRO APITA: FIM DE PARTIDA! ---");
+            adicionarLog("--- FIM DE JOGO: Placar Final " + golsMeuTime + "x" + golsAdv + " ---");
         }
     }
 
     private void processarMotorJogo() {
         int sorteioEvento = (int) (Math.random() * 101);
-        
-        if (sorteioEvento >= 75) {
+        // Chance de lance perigoso em cada sorteio (aprox 40% de chance para ser frenético)
+        if (sorteioEvento >= 60) {
             adicionarLog("MOTOR: Chance de lance criada! (Sorteio: " + sorteioEvento + ")");
             executarLancePerigoso();
         } else {
-            // Log de tempo real para quando não acontece nada especial
-            String[] frasesMeio = {"Disputa intensa no meio de campo.", "Troca de passes na defesa.", "Lateral cobrado.", "Posse de bola estudada."};
-            adicionarLog("RITMO: " + frasesMeio[(int)(Math.random()*frasesMeio.length)]);
+            adicionarLog("MOTOR: Defesa bem postada impede o avanço.");
         }
     }
 
@@ -221,17 +252,13 @@ public class Partida extends JPanel {
         int forcaA = atkTotalMeuTime + defTotalMeuTime;
         int forcaB = atkTotalAdv + defTotalAdv;
         int total = forcaA + forcaB;
-        
         int sorteioPosse = (int) (Math.random() * total);
 
-        adicionarLog("POSSE: Total " + total + " | Intervalo Meu: 0-" + forcaA + " | Adv: " + (forcaA+1) + "-" + total);
-        adicionarLog("POSSE: Dado caiu em " + sorteioPosse);
-
-        if (sorteioPosse <= forcaA) {
-            adicionarLog("RESULTADO POSSE: Ataque do MEU TIME iniciado.");
+        if (sorteioPosse < forcaA) {
+            adicionarLog("POSSE: Ataque MEU TIME (Sorteio: " + sorteioPosse + " < " + forcaA + ")");
             tentarGol("MEU TIME", atkTotalMeuTime, defTotalAdv);
         } else {
-            adicionarLog("RESULTADO POSSE: Flamengo recupera e parte para o contra-ataque.");
+            adicionarLog("POSSE: Ataque FLAMENGO (Sorteio: " + sorteioPosse + " >= " + forcaA + ")");
             tentarGol("FLAMENGO", atkTotalAdv, defTotalMeuTime);
         }
     }
@@ -239,35 +266,45 @@ public class Partida extends JPanel {
     private void tentarGol(String atacante, int atk, int def) {
         int saldo = atk - def;
         int prob = (saldo < 0) ? 10 : (saldo <= 15 ? 20 : (saldo <= 30 ? 35 : 50));
-
         int sorteioGol = (int) (Math.random() * 100);
-        boolean foiGol = sorteioGol < prob;
-
-        adicionarLog("CHANCE: Probabilidade de gol é " + prob + "% (Saldo ATK-DEF: " + saldo + ")");
-        adicionarLog("CHANCE: Sorteio do chute foi " + sorteioGol);
-
-        if (foiGol) {
+        
+        if (sorteioGol < prob) {
             if (atacante.equals("MEU TIME")) golsMeuTime++; else golsAdv++;
             lblPlacar.setText(golsMeuTime + " - " + golsAdv);
             lblLance.setText("GOOOOOL DO " + atacante + "!!!");
             lblLance.setForeground(new Color(226, 242, 0));
-            adicionarLog("!!! GOL REGISTRADO PARA " + atacante + " !!!");
+            adicionarLog("!!! GOL !!! (Sorteio: " + sorteioGol + " < " + prob + "%)");
         } else {
-            lblLance.setText("Defesa afasta o perigo do " + atacante + "!");
+            lblLance.setText("Chute para fora do " + atacante + "!");
             lblLance.setForeground(Color.WHITE);
-            adicionarLog("DEFESA: O goleiro/zaga levou a melhor.");
+            adicionarLog("CHANCE: Perdeu o gol! (Sorteio: " + sorteioGol + " >= " + prob + "%)");
         }
     }
 
     private void gerenciarFluxoJogo() {
-        if (partidaFinalizada) { dashboard.voltarParaMenu(); return; }
+        if (partidaFinalizada) { 
+            dashboard.voltarParaMenu(); 
+            return; 
+        }
+        
         if (!jogoIniciado || btnAcao.getText().contains("RETOMAR") || btnAcao.getText().contains("INICIAR")) {
             jogoIniciado = true;
-            lblStatusTempo.setText(isSegundoTempo ? "2º TEMPO" : "1º TEMPO");
-            btnAcao.setText("PAUSAR"); btnAcao.setBackground(new Color(140, 40, 40));
-            if (timer == null) timer = new Timer(500, e -> atualizarTempo());
+            
+            // Define o status corretamente ao iniciar cada tempo
+            if (!isAcrescimos) {
+                lblStatusTempo.setText(isSegundoTempo ? "2º TEMPO" : "1º TEMPO");
+            }
+            
+            btnAcao.setText("PAUSAR"); 
+            btnAcao.setBackground(new Color(140, 40, 40));
+            
+            if (timer == null) {
+                timer = new Timer(533, e -> atualizarTempo());
+            }
             timer.start();
-        } else { pausarPartida(); }
+        } else { 
+            pausarPartida(); 
+        }
     }
 
     private void pausarPartida() {
