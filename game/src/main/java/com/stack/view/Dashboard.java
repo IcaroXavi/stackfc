@@ -67,7 +67,7 @@ public class Dashboard extends JFrame {
         JPopupMenu menuConfig = criarMenuConfiguracoes();
         btnConfig.addActionListener(e -> menuConfig.show(btnConfig, -120, btnConfig.getHeight()));
         painelDireito.add(lblData);
-        painelDireito.add(Box.createRigidArea(new Dimension(10, 0)));
+        painelDireito.add(Box.createRigidArea(new Dimension(0, 0)));
         painelDireito.add(btnConfig);
         topo.add(painelDireito, BorderLayout.EAST);
         containerApp.add(topo, BorderLayout.NORTH);
@@ -110,7 +110,7 @@ public class Dashboard extends JFrame {
         home.add(Box.createRigidArea(new Dimension(0, 12)));
         home.add(criarCardConfronto("PRÓXIMO JOGO", "Flamengo", "em casa", "Amistoso"));
         home.add(Box.createRigidArea(new Dimension(0, 20)));
-        home.add(criarCardConfianca("Mensagem da Diretoria", "Estamos aguardando o início da temporada para avaliar<br>sua condição de manutenção no cargo."));
+        home.add(criarCardConfianca("CONFIANÇA DA DIRETORIA", "Estamos aguardando o início da temporada para avaliar<br>sua condição de manutenção no cargo."));
         home.add(Box.createRigidArea(new Dimension(0, 20)));
         JPanel gridCards = new JPanel(new GridLayout(2, 2, 12, 12));
         gridCards.setOpaque(false);
@@ -142,12 +142,12 @@ public class Dashboard extends JFrame {
     private JPanel criarCardConfronto(String titulo, String time, String local, String liga) {
         JPanel card = new JPanel(new GridLayout(4, 1, 0, 5));
         card.setBackground(new Color(20, 30, 50));
-        card.setMaximumSize(new Dimension(400, 130));
+        card.setMaximumSize(new Dimension(400, 150));
         card.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
-        card.add(new JLabel("<html><font color='#e2f200' style='font-weight:bold;'>" + titulo + "</font></html>"));
-        card.add(new JLabel("<html><font color='#96A0B4'>Adversário:</font> <font color='white'>" + time + "</font></html>"));
-        card.add(new JLabel("<html><font color='#96A0B4'>Local:</font> <font color='white'>" + local + "</font></html>"));
-        card.add(new JLabel("<html><font color='#96A0B4'>Competição:</font> <font color='white'>" + liga + "</font></html>"));
+        card.add(new JLabel("<html><font color='#e2f200' size=5 style='font-weight:bold;'>" + titulo + "</font></html>"));
+        card.add(new JLabel("<html><font color='#96A0B4'size=4 >Adversário:</font> <font color='white' size=4>" + time + "</font></html>"));
+        card.add(new JLabel("<html><font color='#96A0B4'size=4 >Local:</font> <font color='white'size=4>" + local + "</font></html>"));
+        card.add(new JLabel("<html><font color='#96A0B4'size=4 >Competição:</font> <font color='white'size=4>" + liga + "</font></html>"));
         return card;
     }
 
