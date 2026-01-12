@@ -3,6 +3,8 @@ package com.stack.view;
 import java.awt.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.util.HashMap;
+import java.util.Map;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
@@ -32,9 +34,14 @@ public class Partida extends JPanel {
     private final Color COR_ZEBRA = new Color(20, 25, 45);
     private final Color COR_BORDA_TABELA = new Color(30, 40, 60);
     private final String CAMINHO_CSV = "C:\\Projetos\\Stack\\game\\src\\main\\java\\com\\stack\\repository\\jogadores.csv";
+    
+    // Cache de imagens para performance
+    private final Map<String, Image> cacheImagens = new HashMap<>();
+    private final String PATH_ICONS = "C:\\Projetos\\Stack\\game\\src\\main\\resources\\icons\\";
 
     public Partida(Dashboard dashboard) {
         this.dashboard = dashboard;
+        carregarImagens();
         setLayout(new BorderLayout());
         setBackground(COR_FUNDO);
 
@@ -150,6 +157,21 @@ public class Partida extends JPanel {
         carregarDadosTitulares();
     }
 
+    private void carregarImagens() {
+        String[] eventos = {"GOL", "AMARELO", "VERMELHO", "LESAO"};
+        String[] arquivos = {"gol.png", "amarelo.png", "vermelho.png", "lesao.png"};
+        for (int i = 0; i < eventos.length; i++) {
+            try {
+                ImageIcon icon = new ImageIcon(PATH_ICONS + arquivos[i]);
+                if (icon.getIconWidth() > 0) {
+                    cacheImagens.put(eventos[i], icon.getImage());
+                }
+            } catch (Exception e) {
+                System.out.println("Erro ao carregar: " + arquivos[i]);
+            }
+        }
+    }
+
     private void adicionarLog(String msg) {
         logMotor.append(" [" + minutosSimulados + "'] " + msg + "\n");
         logMotor.setCaretPosition(logMotor.getDocument().getLength());
@@ -196,7 +218,6 @@ public class Partida extends JPanel {
             lblCronometro.setText("Acréscimos");
             lblCronometro.setForeground(new Color(255, 200, 0));
         }
-
         if (contadorTicks % 4 == 0) processarMotorJogo();
         if (isAcrescimos && (minutosSimulados >= limiteTempo + acrescimosTempo)) finalizarTempo();
     }
@@ -224,23 +245,20 @@ public class Partida extends JPanel {
 
     private void processarMotorJogo() {
         int rEvento = (int) (Math.random() * 101);
-        adicionarLog("MOTOR: Sorteio de evento base: " + rEvento);
+        adicionarLog("MOTOR: Sorteio base: " + rEvento);
 
-        if (rEvento > 94) {
+        if (rEvento > 50) {
             int tipo = (int)(Math.random() * 3);
             String ev = (tipo == 0) ? "AMARELO" : (tipo == 1) ? "VERMELHO" : "LESAO";
             boolean isMeu = Math.random() > 0.5;
             DefaultTableModel mod = isMeu ? modeloMeuTime : modeloAdversario;
             int idx = (int)(Math.random() * mod.getRowCount());
             registrarEventoTabela(mod, idx, ev);
-            adicionarLog("DISCIPLINA: " + ev + " para o jogador [" + mod.getValueAt(idx, 1) + "]");
+            adicionarLog("DISCIPLINA: " + ev + " para [" + mod.getValueAt(idx, 1) + "]");
         }
 
-        if (rEvento >= 60) {
-            executarLancePerigoso();
-        } else {
-            adicionarLog("RITMO: Bola disputada no círculo central.");
-        }
+        if (rEvento >= 10) executarLancePerigoso();
+        else adicionarLog("RITMO: Posse de bola em disputa.");
     }
 
     private void registrarEventoTabela(DefaultTableModel mod, int row, String ev) {
@@ -255,10 +273,10 @@ public class Partida extends JPanel {
         adicionarLog("LANCE: Sorteio posse (" + rPosse + "/" + totalForca + ")");
 
         if (rPosse < (atkTotalMeuTime + defTotalMeuTime)) {
-            adicionarLog("LANCE: Ofensiva do MEU TIME iniciada.");
+            adicionarLog("LANCE: Ofensiva do MEU TIME.");
             tentarGol("MEU TIME", atkTotalMeuTime, defTotalAdv);
         } else {
-            adicionarLog("LANCE: Ofensiva do FLAMENGO iniciada.");
+            adicionarLog("LANCE: Ofensiva do FLAMENGO.");
             tentarGol("FLAMENGO", atkTotalAdv, defTotalMeuTime);
         }
     }
@@ -281,7 +299,7 @@ public class Partida extends JPanel {
         } else {
             lblLance.setText("Pressão do " + atacante + "!");
             lblLance.setForeground(Color.WHITE);
-            adicionarLog("DEFESA: A jogada foi interceptada.");
+            adicionarLog("DEFESA: Lance neutralizado.");
         }
     }
 
@@ -307,9 +325,9 @@ public class Partida extends JPanel {
         ZebraRenderer renderer = new ZebraRenderer();
         for(int i=0; i<3; i++) tabela.getColumnModel().getColumn(i).setCellRenderer(renderer);
         
-        tabela.getColumnModel().getColumn(0).setPreferredWidth(32); // Posição (ajustado para não cortar)
-        tabela.getColumnModel().getColumn(1).setPreferredWidth(100); // Nome (reduzido)
-        tabela.getColumnModel().getColumn(2).setPreferredWidth(78); // Ação (espaço para ícones)
+        tabela.getColumnModel().getColumn(0).setPreferredWidth(32); 
+        tabela.getColumnModel().getColumn(1).setPreferredWidth(100); 
+        tabela.getColumnModel().getColumn(2).setPreferredWidth(78); 
         
         JScrollPane scroll = new JScrollPane(tabela);
         scroll.setBorder(BorderFactory.createLineBorder(COR_BORDA_TABELA));
@@ -325,7 +343,7 @@ public class Partida extends JPanel {
             c.setForeground(new Color(220, 220, 220));
             
             if (column == 1) c.setHorizontalAlignment(SwingConstants.LEFT);
-            else if (column == 2) c.setHorizontalAlignment(SwingConstants.LEFT); // Ícones alinhados à esquerda
+            else if (column == 2) c.setHorizontalAlignment(SwingConstants.LEFT);
             else c.setHorizontalAlignment(SwingConstants.CENTER);
 
             c.setIcon(null); 
@@ -344,27 +362,59 @@ public class Partida extends JPanel {
     }
 
     class MultiIcon implements Icon {
-        private String[] eventos;
-        public MultiIcon(String s) { eventos = s.split(","); }
-        public void paintIcon(Component c, Graphics g, int x, int y) {
-            int offsetX = 0;
-            for (String e : eventos) {
-                if (e.equals("GOL")) {
-                    g.setColor(Color.WHITE); g.fillOval(x + offsetX, y + 5, 8, 8);
-                } else if (e.equals("AMARELO")) {
-                    g.setColor(Color.YELLOW); g.fillRect(x + offsetX, y + 4, 7, 11);
-                } else if (e.equals("VERMELHO")) {
-                    g.setColor(Color.RED); g.fillRect(x + offsetX, y + 4, 7, 11); // Preenchimento total
-                } else if (e.equals("LESAO")) { 
-                    g.setColor(Color.RED); g.setFont(new Font("Arial", Font.BOLD, 12)); 
-                    g.drawString("✚", x + offsetX, y + 13);
-                }
-                offsetX += 12;
-            }
-        }
-        public int getIconWidth() { return eventos.length * 12; }
-        public int getIconHeight() { return 20; }
+    private String[] eventos;
+    
+    public MultiIcon(String s) { 
+        eventos = s.split(","); 
     }
+
+    @Override
+    public void paintIcon(Component c, Graphics g, int x, int y) {
+        Graphics2D g2 = (Graphics2D) g;
+        // Deixa o desenho mais suave (sem serrilhado)
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        
+        int offsetX = 0;
+        for (String e : eventos) {
+            if (e.equals("GOL")) {
+                Image img = cacheImagens.get("GOL");
+                if (img != null) {
+                    g2.drawImage(img, x + offsetX, y + 3, 14, 14, null);
+                } else {
+                    // Círculo branco caso o png do gol falhe
+                    g2.setColor(Color.WHITE);
+                    g2.fillOval(x + offsetX, y + 4, 12, 12);
+                }
+            } 
+            else if (e.equals("AMARELO")) {
+                g2.setColor(new Color(255, 210, 0)); // Amarelo vivo
+                g2.fillRect(x + offsetX, y + 3, 9, 13);
+                g2.setColor(Color.BLACK); // Bordas sutis para destacar
+                g2.drawRect(x + offsetX, y + 3, 9, 13);
+            } 
+            else if (e.equals("VERMELHO")) {
+                g2.setColor(new Color(220, 0, 0)); // Vermelho forte
+                g2.fillRect(x + offsetX, y + 3, 9, 13);
+                g2.setColor(Color.BLACK);
+                g2.drawRect(x + offsetX, y + 3, 9, 13);
+            } 
+            else if (e.equals("LESAO")) {
+                g2.setColor(new Color(255, 50, 50)); // Vermelho cruz
+                // Desenha a barra horizontal da cruz
+                g2.fillRect(x + offsetX, y + 8, 14, 4);
+                // Desenha a barra vertical da cruz
+                g2.fillRect(x + offsetX + 5, y + 3, 4, 14);
+            }
+            
+            offsetX += 18; // Espaço para o próximo ícone não encavalar
+        }
+    }
+
+    @Override
+    public int getIconWidth() { return eventos.length * 18; }
+    @Override
+    public int getIconHeight() { return 20; }
+}
 
     private DefaultTableModel criarModeloConfronto() {
         return new DefaultTableModel(new String[]{"P", "N", "A"}, 0) {
