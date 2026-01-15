@@ -3,6 +3,7 @@ package com.stack.view;
 import java.awt.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.*;
@@ -18,26 +19,18 @@ public class Partida extends JPanel {
     private JTextArea logMotor; 
     private Timer timer;
     
-    private int minutosSimulados = 0;
-    private int contadorTicks = 0;
-    private int acrescimosTempo = 0;
-    private boolean isAcrescimos = false;
-    private boolean isSegundoTempo = false;
-    private boolean jogoIniciado = false;
-    private boolean partidaFinalizada = false;
-
-    private int atkTotalMeuTime = 0, defTotalMeuTime = 0;
-    private int atkTotalAdv = 0, defTotalAdv = 0;
+    private int minutosSimulados = 0, contadorTicks = 0;
+    private boolean isSegundoTempo = false, jogoIniciado = false, partidaFinalizada = false;
     private int golsMeuTime = 0, golsAdv = 0;
+
+    private final Map<String, int[]> dadosBrutos = new HashMap<>();
 
     private final Color COR_FUNDO = new Color(10, 15, 30);
     private final Color COR_ZEBRA = new Color(20, 25, 45);
     private final Color COR_BORDA_TABELA = new Color(30, 40, 60);
     private final String CAMINHO_CSV = "C:\\Projetos\\Stack\\game\\src\\main\\java\\com\\stack\\repository\\jogadores.csv";
-    
-    // Cache de imagens para performance
     private final Map<String, Image> cacheImagens = new HashMap<>();
-    private final String PATH_ICONS = "C:\\Projetos\\Stack\\game\\src\\main\\resources\\icons\\";
+    private final String PATH_ICONS = "C:\\\\Projetos\\\\Stack\\\\game\\\\src\\\\main\\\\resources\\\\icons\\\\gol.png";
 
     public Partida(Dashboard dashboard) {
         this.dashboard = dashboard;
@@ -103,7 +96,8 @@ public class Partida extends JPanel {
 
         JPanel containerTabelas = new JPanel(new GridLayout(1, 2, 15, 0));
         containerTabelas.setOpaque(false);
-        containerTabelas.setMaximumSize(new Dimension(Integer.MAX_VALUE, 240));
+        containerTabelas.setPreferredSize(new Dimension(0, 340));
+        containerTabelas.setMaximumSize(new Dimension(Integer.MAX_VALUE, 340));
 
         modeloMeuTime = criarModeloConfronto();
         tabelaMeuTime = new JTable(modeloMeuTime);
@@ -158,170 +152,95 @@ public class Partida extends JPanel {
     }
 
     private void carregarImagens() {
-        String[] eventos = {"GOL", "AMARELO", "VERMELHO", "LESAO"};
-        String[] arquivos = {"gol.png", "amarelo.png", "vermelho.png", "lesao.png"};
-        for (int i = 0; i < eventos.length; i++) {
-            try {
-                ImageIcon icon = new ImageIcon(PATH_ICONS + arquivos[i]);
-                if (icon.getIconWidth() > 0) {
-                    cacheImagens.put(eventos[i], icon.getImage());
-                }
-            } catch (Exception e) {
-                System.out.println("Erro ao carregar: " + arquivos[i]);
+        try {
+            // Tentativa direta pelo caminho solicitado
+            ImageIcon icon = new ImageIcon(PATH_ICONS);
+            if (icon.getIconWidth() > 0) {
+                cacheImagens.put("GOL", icon.getImage().getScaledInstance(15, 15, Image.SCALE_SMOOTH));
             }
-        }
+        } catch (Exception e) {}
     }
 
     private void adicionarLog(String msg) {
-        logMotor.append(" [" + minutosSimulados + "'] " + msg + "\n");
+        logMotor.append(msg + "\n");
         logMotor.setCaretPosition(logMotor.getDocument().getLength());
     }
 
-    private void carregarDadosTitulares() {
-        modeloMeuTime.setRowCount(0); modeloAdversario.setRowCount(0);
-        atkTotalMeuTime = 0; defTotalMeuTime = 0; atkTotalAdv = 0; defTotalAdv = 0;
-        try (BufferedReader br = new BufferedReader(new FileReader(CAMINHO_CSV))) {
-            String l; 
-            while ((l = br.readLine()) != null) {
-                if (l.trim().isEmpty() || l.toLowerCase().startsWith("id")) continue;
-                String[] d = l.split(",");
-                if (d.length >= 9 && d[8].trim().equals("1")) {
-                    int def = Integer.parseInt(d[4].trim());
-                    int atk = Integer.parseInt(d[5].trim());
-                    Object[] r = {abreviar(d[2]), d[1].toUpperCase(), ""};
-                    if (d[7].trim().equals("1")) {
-                        modeloMeuTime.addRow(r);
-                        atkTotalMeuTime += atk; defTotalMeuTime += def;
-                    } else if (d[7].trim().equals("2")) {
-                        modeloAdversario.addRow(r);
-                        atkTotalAdv += atk; defTotalAdv += def;
-                    }
-                }
-            }
-            adicionarLog("DATA: MeuTime(ATK:" + atkTotalMeuTime + "/DEF:" + defTotalMeuTime + ") vs Adv(ATK:" + atkTotalAdv + "/DEF:" + defTotalAdv + ")");
-        } catch (Exception e) { adicionarLog("ERRO: Banco de dados."); }
-    }
-
-    private void atualizarTempo() {
-        contadorTicks++;
-        int limiteTempo = 45;
-        if (minutosSimulados < limiteTempo) {
-            minutosSimulados++;
-            lblCronometro.setText(minutosSimulados + "'");
-        } else {
-            if (!isAcrescimos) {
-                isAcrescimos = true;
-                acrescimosTempo = (int)(Math.random() * 5) + 3; 
-                adicionarLog("ÁRBITRO: Placa sinaliza +" + acrescimosTempo + " minutos.");
-            }
-            minutosSimulados++;
-            lblCronometro.setText("Acréscimos");
-            lblCronometro.setForeground(new Color(255, 200, 0));
-        }
-        if (contadorTicks % 4 == 0) processarMotorJogo();
-        if (isAcrescimos && (minutosSimulados >= limiteTempo + acrescimosTempo)) finalizarTempo();
-    }
-
-    private void finalizarTempo() {
-        pausarPartida();
-        isAcrescimos = false;
-        lblCronometro.setForeground(Color.WHITE);
-        if (!isSegundoTempo) {
-            isSegundoTempo = true;
-            minutosSimulados = 0;
-            lblCronometro.setText("0'");
-            btnAcao.setText("INICIAR 2º TEMPO");
-            lblStatusTempo.setText("INTERVALO");
-            adicionarLog("EVENTO: Intervalo de jogo.");
-        } else {
-            partidaFinalizada = true;
-            lblCronometro.setText("--"); 
-            lblStatusTempo.setText("ENCERRADO");
-            btnAcao.setText("SAIR");
-            btnAcao.setBackground(new Color(50, 50, 60));
-            adicionarLog("EVENTO: Partida encerrada.");
-        }
-    }
-
     private void processarMotorJogo() {
-        int rEvento = (int) (Math.random() * 101);
-        adicionarLog("MOTOR: Sorteio base: " + rEvento);
+        int r = (int) (Math.random() * 101);
+        adicionarLog(String.format("[%d'] SORTEIO GERAL: %d", minutosSimulados, r)); // LOGS VOLTARAM
 
-        if (rEvento > 50) {
-            int tipo = (int)(Math.random() * 3);
-            String ev = (tipo == 0) ? "AMARELO" : (tipo == 1) ? "VERMELHO" : "LESAO";
-            boolean isMeu = Math.random() > 0.5;
-            DefaultTableModel mod = isMeu ? modeloMeuTime : modeloAdversario;
-            int idx = (int)(Math.random() * mod.getRowCount());
-            registrarEventoTabela(mod, idx, ev);
-            adicionarLog("DISCIPLINA: " + ev + " para [" + mod.getValueAt(idx, 1) + "]");
+        if (r <= 2) aplicarEventoDisciplina("LESAO");
+        else if (r <= 5) aplicarEventoDisciplina("VERMELHO");
+        else if (r <= 15) aplicarEventoDisciplina("AMARELO");
+        else if (r <= 30) adicionarLog("   -> Nada aconteceu.");
+        else executarLanceFunil();
+    }
+
+    private void executarLanceFunil() {
+        int[] fM = calcularForcaBrutaAtiva(modeloMeuTime);
+        int[] fA = calcularForcaBrutaAtiva(modeloAdversario);
+        int somaMeu = fM[0] + fM[1];
+        int somaAdv = fA[0] + fA[1];
+        int total = somaMeu + somaAdv;
+        if (total == 0) return;
+
+        int rPosse = (int) (Math.random() * total);
+        adicionarLog(String.format("   -> FUNIL POSSE: MEU(%d) vs ADV(%d) | Sorteio: %d", somaMeu, somaAdv, rPosse));
+
+        if (rPosse <= somaMeu) {
+            adicionarLog("   -> Posse: MEU TIME");
+            resolverDueloGol("MEU TIME", fM[0], fA[1], modeloMeuTime);
+        } else {
+            adicionarLog("   -> Posse: FLAMENGO");
+            resolverDueloGol("FLAMENGO", fA[0], fM[1], modeloAdversario);
         }
+    }
 
-        if (rEvento >= 10) executarLancePerigoso();
-        else adicionarLog("RITMO: Posse de bola em disputa.");
+    private void resolverDueloGol(String atacante, int atk, int def, DefaultTableModel modAtk) {
+        int saldo = atk - def;
+        int prob = (saldo >= 20) ? 60 : (saldo >= 0) ? 40 : 20;
+        int r = (int) (Math.random() * 101);
+        
+        adicionarLog(String.format("      CHANCE GOL: Atk(%d) Def(%d) Saldo(%d) Prob(%d%%) Sorteio(%d)", atk, def, saldo, prob, r));
+
+        if (r <= prob) {
+            if (atacante.equals("MEU TIME")) golsMeuTime++; else golsAdv++;
+            int autor = sorteiaAutorAtivo(modAtk);
+            if (autor != -1) registrarEventoTabela(modAtk, autor, "GOL");
+            lblPlacar.setText(golsMeuTime + " - " + golsAdv);
+            lblLance.setText("GOOOOOL DO " + atacante + "!!!");
+            lblLance.setForeground(new Color(226, 242, 0));
+        } else {
+            lblLance.setText("A defesa cortou o lance!");
+            lblLance.setForeground(Color.WHITE);
+        }
     }
 
     private void registrarEventoTabela(DefaultTableModel mod, int row, String ev) {
         String atual = (String) mod.getValueAt(row, 2);
-        if (atual == null || atual.isEmpty()) mod.setValueAt(ev, row, 2);
-        else mod.setValueAt(atual + "," + ev, row, 2);
-    }
+        if (atual == null) atual = "";
+        if (ev.equals("AMARELO") && atual.contains("AMARELO")) ev = "VERMELHO";
+        
+        String novoStatus = atual.isEmpty() ? ev : atual + "," + ev;
+        mod.setValueAt(novoStatus, row, 2);
+        
+        adicionarLog("   !!! EVENTO: " + ev + " em " + mod.getValueAt(row, 1));
 
-    private void executarLancePerigoso() {
-        int totalForca = (atkTotalMeuTime + defTotalMeuTime) + (atkTotalAdv + defTotalAdv);
-        int rPosse = (int) (Math.random() * totalForca);
-        adicionarLog("LANCE: Sorteio posse (" + rPosse + "/" + totalForca + ")");
-
-        if (rPosse < (atkTotalMeuTime + defTotalMeuTime)) {
-            adicionarLog("LANCE: Ofensiva do MEU TIME.");
-            tentarGol("MEU TIME", atkTotalMeuTime, defTotalAdv);
-        } else {
-            adicionarLog("LANCE: Ofensiva do FLAMENGO.");
-            tentarGol("FLAMENGO", atkTotalAdv, defTotalMeuTime);
-        }
-    }
-
-    private void tentarGol(String atacante, int atk, int def) {
-        int saldo = atk - def;
-        int prob = (saldo < 0) ? 10 : (saldo <= 15 ? 20 : (saldo <= 30 ? 35 : 50));
-        int rGol = (int)(Math.random() * 100);
-        adicionarLog("FINALIZAÇÃO: Probabilidade de gol: " + prob + "% | Sorteio: " + rGol);
-
-        if (rGol < prob) {
-            DefaultTableModel mod = atacante.equals("MEU TIME") ? modeloMeuTime : modeloAdversario;
-            if (atacante.equals("MEU TIME")) golsMeuTime++; else golsAdv++;
-            int autorIdx = (int)(Math.random() * mod.getRowCount());
-            registrarEventoTabela(mod, autorIdx, "GOL");
-            lblPlacar.setText(golsMeuTime + " - " + golsAdv);
-            lblLance.setText("GOOOOOL DO " + atacante + "!!!");
-            lblLance.setForeground(new Color(226, 242, 0));
-            adicionarLog("GOL: Confirmado! Autor: " + mod.getValueAt(autorIdx, 1));
-        } else {
-            lblLance.setText("Pressão do " + atacante + "!");
-            lblLance.setForeground(Color.WHITE);
-            adicionarLog("DEFESA: Lance neutralizado.");
-        }
-    }
-
-    private void gerenciarFluxoJogo() {
-        if (partidaFinalizada) { dashboard.voltarParaMenu(); return; }
-        if (!jogoIniciado || btnAcao.getText().contains("RETOMAR") || btnAcao.getText().contains("INICIAR")) {
-            jogoIniciado = true;
-            if (!isAcrescimos) lblStatusTempo.setText(isSegundoTempo ? "2º TEMPO" : "1º TEMPO");
-            btnAcao.setText("PAUSAR"); btnAcao.setBackground(new Color(140, 40, 40));
-            if (timer == null) timer = new Timer(533, e -> atualizarTempo());
-            timer.start();
-        } else { pausarPartida(); }
-    }
-
-    private void pausarPartida() {
-        if (timer != null) timer.stop();
-        btnAcao.setText("RETOMAR"); btnAcao.setBackground(new Color(0, 90, 55));
+        SwingUtilities.invokeLater(() -> {
+            mod.fireTableRowsUpdated(row, row);
+            tabelaMeuTime.repaint();
+            tabelaAdversario.repaint();
+        });
     }
 
     private JScrollPane configurarTabelaFinal(JTable tabela) {
-        tabela.setBackground(COR_FUNDO); tabela.setRowHeight(20); tabela.setShowGrid(false);
-        tabela.setTableHeader(null); tabela.setFocusable(false);
+        tabela.setBackground(COR_FUNDO); 
+        tabela.setRowHeight(20); // VISUAL ORIGINAL 20PX
+        tabela.setShowGrid(false);
+        tabela.setTableHeader(null); 
+        tabela.setFocusable(false);
+        
         ZebraRenderer renderer = new ZebraRenderer();
         for(int i=0; i<3; i++) tabela.getColumnModel().getColumn(i).setCellRenderer(renderer);
         
@@ -339,22 +258,18 @@ public class Partida extends JPanel {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             JLabel c = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            String status = (String) table.getValueAt(row, 2);
+            boolean fora = status != null && (status.contains("VERMELHO") || status.contains("LESAO"));
             c.setBackground(row % 2 == 0 ? COR_ZEBRA : COR_FUNDO);
-            c.setForeground(new Color(220, 220, 220));
+            c.setForeground(fora ? new Color(80, 85, 100) : new Color(220, 220, 220));
+            c.setIcon(null);
             
-            if (column == 1) c.setHorizontalAlignment(SwingConstants.LEFT);
-            else if (column == 2) c.setHorizontalAlignment(SwingConstants.LEFT);
-            else c.setHorizontalAlignment(SwingConstants.CENTER);
-
-            c.setIcon(null); 
-            c.setText(value != null ? value.toString() : "");
-
-            if (column == 2 && value != null) {
-                String val = value.toString();
-                if (!val.isEmpty()) {
-                    c.setText("");
-                    c.setIcon(new MultiIcon(val));
-                }
+            if (column == 2 && value != null && !value.toString().isEmpty()) {
+                c.setText(""); 
+                c.setIcon(new MultiIcon(value.toString()));
+                c.setHorizontalAlignment(SwingConstants.LEFT); // Garante que comece na esquerda
+            } else {
+                c.setText(value != null ? value.toString() : "");
             }
             c.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
             return c;
@@ -362,59 +277,145 @@ public class Partida extends JPanel {
     }
 
     class MultiIcon implements Icon {
-    private String[] eventos;
-    
-    public MultiIcon(String s) { 
-        eventos = s.split(","); 
-    }
+        private String[] eventos;
 
-    @Override
-    public void paintIcon(Component c, Graphics g, int x, int y) {
-        Graphics2D g2 = (Graphics2D) g;
-        // Deixa o desenho mais suave (sem serrilhado)
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        
-        int offsetX = 0;
-        for (String e : eventos) {
-            if (e.equals("GOL")) {
-                Image img = cacheImagens.get("GOL");
-                if (img != null) {
-                    g2.drawImage(img, x + offsetX, y + 3, 14, 14, null);
-                } else {
-                    // Círculo branco caso o png do gol falhe
-                    g2.setColor(Color.WHITE);
-                    g2.fillOval(x + offsetX, y + 4, 12, 12);
+        public MultiIcon(String s) {
+            eventos = s.split(",");
+        }
+
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int offsetX = 0;
+            for (String e : eventos) {
+                e = e.trim(); // Limpa espaços
+                if (e.equals("GOL")) {
+                    Image img = cacheImagens.get("GOL");
+                    if (img != null) {
+                        // Usando sua lógica de desenho que funciona
+                        g2.drawImage(img, x + offsetX, y + 3, 14, 14, null);
+                    } else {
+                        g2.setColor(Color.WHITE);
+                        g2.fillOval(x + offsetX, y + 4, 12, 12);
+                    }
+                    offsetX += 16; // Espaço da bola
+                } 
+                else if (e.equals("AMARELO") || e.equals("VERMELHO")) {
+                    g2.setColor(e.equals("AMARELO") ? new Color(255, 210, 0) : new Color(220, 0, 0));
+                    g2.fillRect(x + offsetX, y + 3, 9, 13);
+                    g2.setColor(Color.BLACK);
+                    g2.drawRect(x + offsetX, y + 3, 9, 13);
+                    offsetX += 11; // DIMINUÍDO: Agora o vermelho cola no amarelo
+                } 
+                else if (e.equals("LESAO")) {
+                    g2.setColor(new Color(255, 50, 50));
+                    g2.fillRect(x + offsetX, y + 8, 14, 4);
+                    g2.fillRect(x + offsetX + 5, y + 3, 4, 14);
+                    offsetX += 18;
                 }
-            } 
-            else if (e.equals("AMARELO")) {
-                g2.setColor(new Color(255, 210, 0)); // Amarelo vivo
-                g2.fillRect(x + offsetX, y + 3, 9, 13);
-                g2.setColor(Color.BLACK); // Bordas sutis para destacar
-                g2.drawRect(x + offsetX, y + 3, 9, 13);
-            } 
-            else if (e.equals("VERMELHO")) {
-                g2.setColor(new Color(220, 0, 0)); // Vermelho forte
-                g2.fillRect(x + offsetX, y + 3, 9, 13);
-                g2.setColor(Color.BLACK);
-                g2.drawRect(x + offsetX, y + 3, 9, 13);
-            } 
-            else if (e.equals("LESAO")) {
-                g2.setColor(new Color(255, 50, 50)); // Vermelho cruz
-                // Desenha a barra horizontal da cruz
-                g2.fillRect(x + offsetX, y + 8, 14, 4);
-                // Desenha a barra vertical da cruz
-                g2.fillRect(x + offsetX + 5, y + 3, 4, 14);
             }
-            
-            offsetX += 18; // Espaço para o próximo ícone não encavalar
+        }
+
+        @Override
+        public int getIconWidth() {
+            // Ajustado para refletir o novo espaçamento menor
+            return eventos.length * 14; 
+        }
+
+        @Override
+        public int getIconHeight() {
+            return 20;
         }
     }
 
-    @Override
-    public int getIconWidth() { return eventos.length * 18; }
-    @Override
-    public int getIconHeight() { return 20; }
-}
+    // --- RESTANTE DOS MÉTODOS (ESTÁVEIS) ---
+    private void carregarDadosTitulares() {
+        modeloMeuTime.setRowCount(0); modeloAdversario.setRowCount(0);
+        dadosBrutos.clear();
+        try (BufferedReader br = new BufferedReader(new FileReader(CAMINHO_CSV))) {
+            String l; 
+            while ((l = br.readLine()) != null) {
+                if (l.trim().isEmpty() || l.toLowerCase().startsWith("id")) continue;
+                String[] d = l.split(",");
+                if (d.length >= 9 && d[8].trim().equals("1")) {
+                    String nome = d[1].toUpperCase();
+                    int def = Integer.parseInt(d[4].trim());
+                    int atk = Integer.parseInt(d[5].trim());
+                    dadosBrutos.put(nome, new int[]{atk, def});
+                    Object[] r = {abreviar(d[2]), nome, ""};
+                    if (d[7].trim().equals("1")) modeloMeuTime.addRow(r);
+                    else if (d[7].trim().equals("2")) modeloAdversario.addRow(r);
+                }
+            }
+        } catch (Exception e) {}
+    }
+
+    private void atualizarTempo() {
+        contadorTicks++; minutosSimulados += 3;
+        if (contadorTicks <= 15) {
+            lblCronometro.setText(minutosSimulados + "'");
+            if (contadorTicks % 2 == 0) processarMotorJogo();
+        } else if (contadorTicks == 16) {
+            lblCronometro.setText("Acréscimos");
+            lblCronometro.setForeground(new Color(255, 200, 0));
+            processarMotorJogo();
+        } else { finalizarTempo(); }
+    }
+
+    private void finalizarTempo() {
+        pausarPartida(); lblCronometro.setForeground(Color.WHITE);
+        if (!isSegundoTempo) {
+            isSegundoTempo = true; minutosSimulados = 0; contadorTicks = 0;
+            lblCronometro.setText("0'"); btnAcao.setText("INICIAR 2º TEMPO");
+            lblStatusTempo.setText("INTERVALO");
+        } else {
+            partidaFinalizada = true; lblStatusTempo.setText("ENCERRADO");
+            btnAcao.setText("SAIR"); btnAcao.setBackground(new Color(50, 50, 60));
+        }
+    }
+
+    private void aplicarEventoDisciplina(String tipo) {
+        boolean isMeu = Math.random() > 0.5;
+        DefaultTableModel mod = isMeu ? modeloMeuTime : modeloAdversario;
+        int idx = sorteiaAutorAtivo(mod);
+        if (idx != -1) registrarEventoTabela(mod, idx, tipo);
+    }
+
+    private int[] calcularForcaBrutaAtiva(DefaultTableModel mod) {
+        int a = 0, d = 0;
+        for (int i = 0; i < mod.getRowCount(); i++) {
+            String s = (String) mod.getValueAt(i, 2);
+            if (s == null || (!s.contains("VERMELHO") && !s.contains("LESAO"))) {
+                int[] v = dadosBrutos.get((String) mod.getValueAt(i, 1));
+                if (v != null) { a += v[0]; d += v[1]; }
+            }
+        }
+        return new int[]{a, d};
+    }
+
+    private int sorteiaAutorAtivo(DefaultTableModel mod) {
+        java.util.List<Integer> ativos = new ArrayList<>();
+        for (int i = 0; i < mod.getRowCount(); i++) {
+            String s = (String) mod.getValueAt(i, 2);
+            if (s == null || (!s.contains("VERMELHO") && !s.contains("LESAO"))) ativos.add(i);
+        }
+        return ativos.isEmpty() ? -1 : ativos.get((int)(Math.random() * ativos.size()));
+    }
+
+    private void gerenciarFluxoJogo() {
+        if (partidaFinalizada) { dashboard.voltarParaMenu(); return; }
+        if (!jogoIniciado || btnAcao.getText().contains("RETOMAR") || btnAcao.getText().contains("INICIAR")) {
+            jogoIniciado = true;
+            lblStatusTempo.setText(isSegundoTempo ? "2º TEMPO" : "1º TEMPO");
+            btnAcao.setText("PAUSAR"); btnAcao.setBackground(new Color(140, 40, 40));
+            if (timer == null) timer = new Timer(1000, e -> atualizarTempo());
+            timer.start();
+        } else { pausarPartida(); }
+    }
+
+    private void pausarPartida() { if (timer != null) timer.stop(); btnAcao.setText("RETOMAR"); btnAcao.setBackground(new Color(0, 90, 55)); }
 
     private DefaultTableModel criarModeloConfronto() {
         return new DefaultTableModel(new String[]{"P", "N", "A"}, 0) {

@@ -144,7 +144,7 @@ public class Dashboard extends JFrame {
         card.setBackground(new Color(20, 30, 50));
         card.setMaximumSize(new Dimension(400, 150));
         card.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
-        card.add(new JLabel("<html><font color='#e2f200' size=5 style='font-weight:bold;'>" + titulo + "</font></html>"));
+        card.add(new JLabel("<html><font color='#d0f309' size=5 style='font-weight:bold;'>" + titulo + "</font></html>"));
         card.add(new JLabel("<html><font color='#96A0B4'size=4 >Adversário:</font> <font color='white' size=4>" + time + "</font></html>"));
         card.add(new JLabel("<html><font color='#96A0B4'size=4 >Local:</font> <font color='white'size=4>" + local + "</font></html>"));
         card.add(new JLabel("<html><font color='#96A0B4'size=4 >Competição:</font> <font color='white'size=4>" + liga + "</font></html>"));
