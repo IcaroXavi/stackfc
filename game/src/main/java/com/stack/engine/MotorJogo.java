@@ -22,7 +22,24 @@ public class MotorJogo {
     private int placarVisitante = 0;
     private int minutos = 0;
     private int tempo = 1;
-    
+    private boolean pausado = false;
+    private final Object trava = new Object(); 
+
+    public List<Jogador> getTitularesCasa() {
+    return titularesCasa;
+    }
+
+    public List<Jogador> getTitularesVisitante() {
+        return titularesVisitante;
+    }
+
+        public List<Jogador> getReservasCasa() {
+    return titularesCasa;
+    }
+
+    public List<Jogador> getReservasVisitante() {
+        return titularesVisitante;
+    }
 
     public MotorJogo(int idCasa, int idVisitante) {
         this.idCasa = idCasa;
@@ -162,21 +179,34 @@ public class MotorJogo {
     public void iniciarCronometro() {
         new Thread(() -> {
             try {
-                while (minutos < 49) {
-                    Thread.sleep(100); // 1000 = 1 segundo
-                    minutos++;
-                    if (minutos > 0 && minutos % 4 == 0) {
-                    processarLance();
+                while (tempo <= 2) {
+                    while (minutos < 49) { // Loop dos minutos
+                        synchronized (trava) {
+                            while (pausado) {
+                                trava.wait(); 
+                            }
+                        }    
+                        Thread.sleep(100); 
+                        minutos++;
+                        if (minutos > 0 && minutos % 4 == 0) {
+                            processarLance();
+                        }
+                    }
+                    if (tempo == 1) {
+                        this.pausarJogo(); // Força a pausa para o intervalo
+                        this.tempo = 2;    // Prepara para o próximo tempo
+                        this.minutos = 0;  // Reseta o cronômetro  
+                    } else {
+                        this.tempo = 3;
+                        this.minutos = 0;
+                    }   
                 }
-                }
-                if (minutos >= 49) {
-                tempo++; // Aumenta de 1 para 2 (Segundo Tempo)
-                minutos = 0; // Reseta para começar o 2º tempo do 45
-            }
             } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-        }).start(); 
+        }).start();
     }
+    
 
     public String getCronometroFormatado() {
         if (minutos == 0) {
@@ -200,6 +230,21 @@ public class MotorJogo {
             return "2º Tempo" ; 
         } 
         return "Encerrada";
+    }
+
+    public void pausarJogo() {
+        pausado = true;
+    }
+
+    public boolean isPausado() {
+        return pausado;
+    }
+
+    public void retomarJogo() {
+        synchronized (trava) {
+            pausado = false;
+            trava.notify(); // Acorda a Thread que está no wait()
+        }
     }
 
 }

@@ -24,12 +24,13 @@ public class JogadorRepository {
                     todos.add(new Jogador(
                         d[1].trim(),                        // nome
                         d[2].trim(),                        // posicao
-                        Integer.parseInt(d[3].trim()),      // idade
-                        Integer.parseInt(d[4].trim()),      // defesa
-                        Integer.parseInt(d[5].trim()),      // ataque
-                        Integer.parseInt(d[6].trim()),      // total
-                        Integer.parseInt(d[7].trim()),      // timeId
-                        Integer.parseInt(d[8].trim())       // status 
+                        d[3].trim(),                        // pos
+                        Integer.parseInt(d[4].trim()),      // idade
+                        Integer.parseInt(d[5].trim()),      // defesa
+                        Integer.parseInt(d[6].trim()),      // ataque
+                        Integer.parseInt(d[7].trim()),      // total
+                        Integer.parseInt(d[8].trim()),      // timeId
+                        Integer.parseInt(d[9].trim())       // status 
                     ));
                 }
             }

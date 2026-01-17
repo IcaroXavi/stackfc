@@ -15,7 +15,6 @@ public class TelaPartida extends JPanel {
     private JTable tabelaMeuTime, tabelaAdversario;
     private DefaultTableModel modeloMeuTime, modeloAdversario;
     private JButton btnAcao, btnTaticas, btnVerAdversario;
-    private JTextArea logMotor;
     private Timer timer;
     private int minutos = 0;
     private int golsMeuTime = 0;
@@ -121,21 +120,12 @@ public class TelaPartida extends JPanel {
         lblLance.setFont(new Font("Segoe UI", Font.BOLD, 14));
         containerLance.add(lblLance);
 
-        // Log de Debug
-        logMotor = new JTextArea(10, 30);
-        logMotor.setBackground(new Color(5, 10, 20));
-        logMotor.setForeground(new Color(0, 210, 255));
-        logMotor.setFont(new Font("Monospaced", Font.PLAIN, 11));
-        logMotor.setEditable(false);
-        JScrollPane scrollLog = new JScrollPane(logMotor);
-        scrollLog.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(new Color(40, 50, 80)), "DEBUG MOTOR DE JOGO", 0, 0, null, Color.GRAY));
 
         painelCentral.add(containerTabelas);
         painelCentral.add(Box.createVerticalStrut(10));
         painelCentral.add(containerLance);
         painelCentral.add(Box.createVerticalStrut(10));
-        painelCentral.add(scrollLog);
+
 
         add(painelCentral, BorderLayout.CENTER);
 
@@ -146,18 +136,60 @@ public class TelaPartida extends JPanel {
         footer.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
 
         btnTaticas = criarBotaoRodape("TÁTICAS", new Color(35, 50, 80));
-        btnVerAdversario = criarBotaoRodape("SCOUT", new Color(50, 50, 55));
-        btnAcao = criarBotaoRodape("INICIAR", new Color(0, 90, 55));
+        btnVerAdversario = criarBotaoRodape("ADVERSÁRIO", new Color(50, 50, 55));
+        btnAcao = criarBotaoRodape("INICIAR PARTIDA", new Color(0, 90, 55));
+
         btnAcao.addActionListener(e -> {
-        motor.iniciarCronometro();
-        timer = new Timer(100, event -> {
-            atualizarInterface();
+            String estadoTempo = motor.getTempo();
+
+            if (estadoTempo.equals("Encerrada")) {
+                //dashboard.voltarAoMenu(); 
+                return;
+            }
+
+            if (timer == null) { 
+                motor.iniciarCronometro();
+                timer = new Timer(100, event -> atualizarInterface());
+                timer.start();
+            } 
+
+            else if (!motor.isPausado()) {
+                motor.pausarJogo();
+            } 
+ 
+ 
+            else {
+                motor.retomarJogo();
+            }
         });
-        timer.start();
-        });
+
         footer.add(btnTaticas); footer.add(btnVerAdversario); footer.add(btnAcao);
         add(footer, BorderLayout.SOUTH);
-        //preencherTabelasVisuais();
+        preencherTabelasVisuais();
+    }
+
+    private void preencherTabelasVisuais() {
+    // Limpa as tabelas antes de preencher (evita duplicar se chamar mais de uma vez)
+    modeloMeuTime.setRowCount(0);
+    modeloAdversario.setRowCount(0);
+
+    // Preencher Time da Casa (Meu Time)
+    for (Jogador j : motor.getTitularesCasa()) {
+        modeloMeuTime.addRow(new Object[]{
+            "", //será a posição da formação definida pela tática
+            "["+ j.getPosicao() +"] " + j.getNome(),
+            "icones", //serão os icones referente as ações de gol, lesão, etc
+        });
+    }
+
+    // Preencher Time Visitante (Adversário)
+    for (Jogador j : motor.getTitularesVisitante()) {
+        modeloAdversario.addRow(new Object[]{
+            "", //será a posição da formação definida pela tática
+            "["+ j.getPosicao() +"] " + j.getNome(),
+            "icones", //serão os icones referente as ações de gol, lesão, etc
+        });
+    }
     }
 
     private JScrollPane configurarTabelaEstilizada(JTable tabela) {
@@ -197,8 +229,26 @@ public class TelaPartida extends JPanel {
     lblCronometro.setText(motor.getCronometroFormatado());
     lblStatusTempo.setText(motor.getTempo());
     lblPlacar.setText(motor.getPlacarFormatado());
-    }
 
+    String estado = motor.getTempo();
+
+    if (motor.getTempo().equals("Encerrada")) {
+        btnAcao.setText("AVANÇAR");
+        btnAcao.setBackground(new Color(0, 0, 225)); // Cinza para fim de jogo
+    } 
+    else if (motor.getTempo().equals("Intervalo")) {
+        btnAcao.setText("INICIAR 2º TEMPO");
+        btnAcao.setBackground(new Color(0, 90, 55)); // Verde
+    } 
+    else if (motor.isPausado()) {
+        btnAcao.setText("RETOMAR");
+        btnAcao.setBackground(new Color(0, 90, 55)); // Verde
+    } 
+    else {
+        btnAcao.setText("PAUSAR");
+        btnAcao.setBackground(new Color(165, 42, 42)); // Vermelho/Marrom
+    }
+}
 
 
 }
