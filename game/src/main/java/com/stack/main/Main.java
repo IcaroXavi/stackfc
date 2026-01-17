@@ -1,19 +1,31 @@
 package com.stack.main;
 
-import com.stack.view.Dashboard;
+import com.stack.controller.DashboardController;
+import com.stack.model.Financas;
+import com.stack.view.TelaDashboard;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 
 public class Main {
     public static void main(String[] args) {
-        // Melhora a aparência dos botões e janelas para o estilo do Windows/Mac/Linux
+        // 1. Configuração de aparência (Look and Feel)
         try {
-            javax.swing.UIManager.setLookAndFeel(javax.swing.UIManager.getSystemLookAndFeelClassName());
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception ignored) {}
 
-        // Lança o Dashboard
+        // 2. Inicia a Interface na Thread correta do Swing
         SwingUtilities.invokeLater(() -> {
-Dashboard dash = new Dashboard("Stack");
-dash.setVisible(true);
+            // Instancia o Model (Os dados do jogo)
+            Financas financas = new Financas(); 
+            
+            // Instancia a View (A janela)
+            TelaDashboard dash = new TelaDashboard("MEU TIME");
+            
+            // Instancia o Controller e "entrega" a View e o Model para ele
+            // O Controller vai configurar os cliques dos botões automaticamente
+            new DashboardController(dash, financas);
+            
+            dash.setVisible(true);
         });
     }
 }
