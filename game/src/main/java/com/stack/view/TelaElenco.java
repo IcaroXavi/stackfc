@@ -80,7 +80,7 @@ public class TelaElenco extends JPanel {
         modelo.setRowCount(0);
         for (Jogador j : lista) {
             Vector<Object> row = new Vector<>();
-            row.add(abreviarPosicao(j.getPosicao())); 
+            row.add(j.getPos().toUpperCase());  
             row.add(j.getNome().toUpperCase());      
             row.add(j.getIdade());  
             row.add(j.getDefesa()); // Valor real do Model
@@ -147,14 +147,4 @@ public class TelaElenco extends JPanel {
         }
     }
 
-    private String abreviarPosicao(String pos) {
-        pos = pos.toLowerCase();
-        if (pos.contains("goleiro")) return "GL";
-        if (pos.contains("zagueiro")) return "ZG";
-        if (pos.contains("lateral direito")) return "LD";
-        if (pos.contains("lateral esquerdo")) return "LE";
-        if (pos.contains("meio campo")) return "MC";
-        if (pos.contains("atacante")) return "AT";
-        return pos.toUpperCase().substring(0, Math.min(pos.length(), 2));
-    }
 }

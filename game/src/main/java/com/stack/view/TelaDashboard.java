@@ -1,9 +1,26 @@
 package com.stack.view;
 
+import java.awt.BorderLayout;
+import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridLayout;
+import java.awt.Image;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.SwingConstants;
+
 import com.stack.engine.MotorJogo;
 import com.stack.util.ResourceLoader;
-import java.awt.*;
-import javax.swing.*;
 
 public class TelaDashboard extends JFrame {
 
@@ -21,7 +38,7 @@ public class TelaDashboard extends JFrame {
 
     private JButton btnAvancar;
     private JButton btnConfig;
-    private JButton btnHome, btnElenco, btnTaticas, btnMercado, btnSede;
+    private JButton btnHome, btnElenco, btnMercado, btnSede;
 
     public TelaDashboard(String nomeTime) {
         setTitle("Stack Football Manager");
@@ -46,7 +63,6 @@ public class TelaDashboard extends JFrame {
         add(painelMestre);
 
         containerApp = new JPanel(new BorderLayout());
-
         navegador = new CardLayout();
         painelPrincipal = new JPanel(navegador);
         painelPrincipal.setBackground(new Color(10, 15, 30));
@@ -54,13 +70,13 @@ public class TelaDashboard extends JFrame {
         // Substituindo telas externas por painéis vazios para não dar erro de compilação
         painelPrincipal.add(criarTelaHome(), "HOME");      
         painelPrincipal.add(telaElenco, "ELENCO");
-        painelPrincipal.add(telaTaticas, "TATICAS"); 
         painelPrincipal.add(telaMercado, "MERCADO"); 
         painelPrincipal.add(telaSede, "SEDE"); 
         containerApp.add(painelPrincipal, BorderLayout.CENTER);
         containerApp.add(criarTopo(nomeTime), BorderLayout.NORTH);
         containerApp.add(criarTabBar(), BorderLayout.SOUTH);
         painelMestre.add(containerApp, "APP");
+        painelMestre.add(telaTaticas, "TATICAS"); 
         layoutMestre.show(painelMestre, "APP");
     }
 
@@ -94,23 +110,25 @@ public class TelaDashboard extends JFrame {
 
     public TelaElenco getTelaElenco() {
     return telaElenco;
-}
+    }
+    
+    public TelaTaticas getTelaTaticas() {
+    return telaTaticas;
+    }
 
     private JPanel criarTabBar() {
-        JPanel tabBar = new JPanel(new GridLayout(1, 5));
+        JPanel tabBar = new JPanel(new GridLayout(1, 4));
         tabBar.setPreferredSize(new Dimension(448, 90));
         tabBar.setBackground(new Color(15, 20, 35));
         tabBar.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(40, 50, 80)));
 
         btnHome = criarBotaoTab("Home", "home.png");
         btnElenco = criarBotaoTab("Elenco", "elenco.png");
-        btnTaticas = criarBotaoTab("Táticas", "tatica.png");
         btnMercado = criarBotaoTab("Mercado", "mercado.png");
         btnSede = criarBotaoTab("Sede", "sede.png");
 
         tabBar.add(btnHome);
         tabBar.add(btnElenco);
-        tabBar.add(btnTaticas);
         tabBar.add(btnMercado);
         tabBar.add(btnSede);
         
@@ -158,7 +176,6 @@ public class TelaDashboard extends JFrame {
     public JButton getBtnConfig() { return btnConfig; }
     public JButton getBtnHome() { return btnHome; }
     public JButton getBtnElenco() { return btnElenco; }
-    public JButton getBtnTaticas() { return btnTaticas; }
     public JButton getBtnMercado() { return btnMercado; }
     public JButton getBtnSede() { return btnSede; }
 
@@ -271,9 +288,13 @@ public class TelaDashboard extends JFrame {
     // 3. Adicionamos ao painel mestre e mostramos
     painelMestre.add(this.telaPartida, "PARTIDA_REAL");
     layoutMestre.show(painelMestre, "PARTIDA_REAL");
-    
+ 
     // Força a interface a se atualizar visualmente
     revalidate();
     repaint();
+    }
+
+    public void mostrarTelaTaticas() {
+        layoutMestre.show(painelMestre, "TATICAS");
     }
 }

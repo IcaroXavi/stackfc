@@ -1,6 +1,0 @@
-Azul escuro		#0A0F1E
-Azul escuro mais opaco	#141E32	
-Azul claro		#00B4FF (0, 180, 255)	
-Cinza claro		#F0F0F0	 
-Cinza escuro		#96A0B4	
-Verde Claro		#42F210 (0, 242, 16)
