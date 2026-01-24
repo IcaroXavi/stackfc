@@ -43,4 +43,7 @@ public class Jogador {
     public int getClube() { return clube; }
     public int getStatus() { return status; }
     public int getEnergia() { return energia; }
+
+    public void setOrdem(int ordem) { this.ordem = ordem; }
+    public void setStatus(int status) { this.status = status; }
 }

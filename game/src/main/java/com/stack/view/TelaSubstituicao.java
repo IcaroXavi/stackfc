@@ -29,10 +29,11 @@ import javax.swing.table.DefaultTableModel;
 
 import com.stack.model.Jogador;
 
-public class TelaTaticas extends JPanel {
 
-    private JTable tabelaTitulares, tabelaReservas, tabelaDisponiveis;
-    private DefaultTableModel modeloTitulares, modeloReservas, modeloDisponiveis;
+public class TelaSubstituicao extends JPanel {
+
+    private JTable tabelaTitulares, tabelaReservas;
+    private DefaultTableModel modeloTitulares, modeloReservas;
     private JComboBox<String> comboFormacao, comboMentalidade;
     private JLabel lblMediaDef, lblMediaAtq, lblMediaOvr;
     private JButton btnJogar, btnVoltar;
@@ -55,25 +56,34 @@ public class TelaTaticas extends JPanel {
     private final Color COR_SILVER = new Color(200, 200, 200);
 
     public void atualizarConfiguracoes(String formacao, String postura) {
-        comboFormacao.setSelectedItem(formacao);
-        comboMentalidade.setSelectedItem(postura);
+        if (formacao != null) comboFormacao.setSelectedItem(formacao);
+        if (postura != null) comboMentalidade.setSelectedItem(postura);
+        
+        // Força a atualização visual das siglas (GL, ZG, MC...) 
         configurarVagasDinamicas();
+        // Força o cálculo das médias de ATQ/DEF baseadas na postura carregada
+        calcularResumo();
     }
 
-    public TelaTaticas() {
+    public TelaSubstituicao(List<Jogador> titulares, List<Jogador> reservas) {
+        this(); // Chama o construtor vazio para inicializar o layout/componentes
+        carregarTaticaInicial(titulares, reservas);
+    }
+
+    public TelaSubstituicao() {
         setLayout(null);
         setBackground(COR_FUNDO);
         // Agora o tamanho preferencial condiz com a tela cheia
-        setPreferredSize(new Dimension(448, 800));
+        setPreferredSize(new Dimension(430, 660));
 
     // --- 1. TOP BAR ORGANIZADA (Labels de Identificação) ---
 
     // 1.1 Títulos das Seleções
-    JLabel lblTituloForm = criarLabelTitulo("FORMAÇÃO", 12, 15);
+    JLabel lblTituloForm = criarLabelTitulo("FORMAÇÃO", 12, 18);
     add(lblTituloForm);
 
     comboFormacao = new JComboBox<>(new String[]{"4-5-1", "4-4-2", "4-3-3", "3-5-2", "3-4-3", "5-4-1", "5-3-2"});
-    comboFormacao.setBounds(12, 32, 60, 25);
+    comboFormacao.setBounds(12, 35, 60, 25);
     comboFormacao.addActionListener(e -> {
         configurarVagasDinamicas();
         calcularResumo();      
@@ -81,20 +91,20 @@ public class TelaTaticas extends JPanel {
     });
     add(comboFormacao);
 
-    JLabel lblTituloPostura = criarLabelTitulo("POSTURA", 80, 15);
+    JLabel lblTituloPostura = criarLabelTitulo("POSTURA", 80, 18);
     add(lblTituloPostura);
 
     comboMentalidade = new JComboBox<>(new String[]{"Defensiva", "Equilibrada", "Ofensiva"});
-    comboMentalidade.setBounds(80, 32, 100, 25);
+    comboMentalidade.setBounds(80, 35, 100, 25);
     comboMentalidade.addActionListener(e -> {
         calcularResumo();
     });
 
     add(comboMentalidade);
 
-    lblMediaDef = criarLabelStat("DEFESA: 0", 190, 33);
-    lblMediaAtq = criarLabelStat("ATAQUE: 0", 265, 33);
-    lblMediaOvr = criarLabelStat("OVERALL: 0", 345, 33);
+    lblMediaDef = criarLabelStat("DEFESA: 0", 190, 36);
+    lblMediaAtq = criarLabelStat("ATAQUE: 0", 265, 36);
+    lblMediaOvr = criarLabelStat("OVERALL: 0", 345, 36);
     add(lblMediaDef); add(lblMediaAtq); add(lblMediaOvr);
 
     // --- 2. TABELAS (RECALCULADAS PARA 800PX) ---
@@ -102,30 +112,23 @@ public class TelaTaticas extends JPanel {
     modeloTitulares = criarModeloBloqueado(new String[]{"ID", "POS", "JOGADOR", "DEFESA", "ATAQUE", "OVERALL", "ENERGIA"}, 11);
     tabelaTitulares = criarTabelaCustom(modeloTitulares);
     JScrollPane spTitulares = criarScroll(tabelaTitulares, "TITULARES");
-    spTitulares.setBounds(10, 67, 412, 240);
+    spTitulares.setBounds(10, 80, 412, 240);
     add(spTitulares);
 
     // Reservas
     modeloReservas = criarModeloBloqueado(new String[]{"ID", "POS", "JOGADOR", "DEFESA", "ATAQUE", "OVERALL", "ENERGIA"}, 6);
     tabelaReservas = criarTabelaCustom(modeloReservas);
     JScrollPane spReservas = criarScroll(tabelaReservas, "BANCO DE RESERVAS");
-    spReservas.setBounds(10, 315, 412, 152);
+    spReservas.setBounds(10, 340, 412, 152);
     add(spReservas);
 
-    // Disponíveis (Aumentada para ocupar o resto do espaço)
-    modeloDisponiveis = criarModeloBloqueado(new String[]{"ID", "POS", "JOGADOR", "DEFESA", "ATAQUE", "OVERALL", "ENERGIA"}, 11);
-    tabelaDisponiveis = criarTabelaCustom(modeloDisponiveis);
-    JScrollPane spDisp = criarScroll(tabelaDisponiveis, "NÃO RELACIONADOS");
-    spDisp.setBounds(10, 475, 412, 240);
-    add(spDisp);
-
     // --- 3. RODAPÉ ---
-    btnVoltar = criarBotaoBase("VOLTAR", new Color(60, 60, 70));
-    btnVoltar.setBounds(12, 720, 190, 30);
+    btnVoltar = criarBotaoBase("CANCELAR", new Color(60, 60, 70));
+    btnVoltar.setBounds(12, 520, 190, 30);
     add(btnVoltar);
 
     btnJogar = criarBotaoBase("CONFIRMAR E JOGAR", new Color(0, 120, 60));
-    btnJogar.setBounds(230, 720, 190, 30);
+    btnJogar.setBounds(230, 520, 190, 30);
     add(btnJogar);
 
     configurarVagasDinamicas();
@@ -143,7 +146,6 @@ public class TelaTaticas extends JPanel {
     // GETTERS PARA O CONTROLLER
     public JTable getTabelaTitulares() { return tabelaTitulares; }
     public JTable getTabelaReservas() { return tabelaReservas; }
-    public JTable getTabelaDisponiveis() { return tabelaDisponiveis; }
     public JButton getBtnJogar() { return btnJogar; }
     public JButton getBtnVoltar() { return btnVoltar; }
     public JComboBox<String> getComboFormacao() {
@@ -235,10 +237,9 @@ public class TelaTaticas extends JPanel {
                         }
                     }
                 } else {
-                    // Lógica para Reservas e Disponíveis (Mantida)
+                    // Lógica para Reservas 
                     if (col == 1) {
                         if (table == tabelaReservas) c.setForeground(COR_AMARELO);
-                        else if (table == tabelaDisponiveis) c.setForeground(COR_LARANJA);
                     } else {
                         c.setForeground(Color.WHITE);
                     }
@@ -307,17 +308,17 @@ public class TelaTaticas extends JPanel {
             @Override
             public void mouseDragged(MouseEvent e) {
                 if (!arrastando) return;
-                pontoMouseGlass = SwingUtilities.convertPoint((Component)e.getSource(), e.getPoint(), TelaTaticas.this.getRootPane());
-                Point pPainel = SwingUtilities.convertPoint((Component)e.getSource(), e.getPoint(), TelaTaticas.this);
-                Component compAbaixo = SwingUtilities.getDeepestComponentAt(TelaTaticas.this, pPainel.x, pPainel.y);
+                pontoMouseGlass = SwingUtilities.convertPoint((Component)e.getSource(), e.getPoint(), TelaSubstituicao.this.getRootPane());
+                Point pPainel = SwingUtilities.convertPoint((Component)e.getSource(), e.getPoint(), TelaSubstituicao.this);
+                Component compAbaixo = SwingUtilities.getDeepestComponentAt(TelaSubstituicao.this, pPainel.x, pPainel.y);
                 if (compAbaixo instanceof JTable) {
                     tabelaAtiva = (JTable) compAbaixo;
-                    linhaAtiva = tabelaAtiva.rowAtPoint(SwingUtilities.convertPoint(TelaTaticas.this, pPainel, tabelaAtiva));
+                    linhaAtiva = tabelaAtiva.rowAtPoint(SwingUtilities.convertPoint(TelaSubstituicao.this, pPainel, tabelaAtiva));
                 } else {
                     tabelaAtiva = null; linhaAtiva = -1;
                 }
-                TelaTaticas.this.getRootPane().getGlassPane().setVisible(true);
-                TelaTaticas.this.getRootPane().getGlassPane().repaint();
+                TelaSubstituicao.this.getRootPane().getGlassPane().setVisible(true);
+                TelaSubstituicao.this.getRootPane().getGlassPane().repaint();
                 repaintTodasTabelas();
             }
 
@@ -327,7 +328,7 @@ public class TelaTaticas extends JPanel {
                     executarSwap(tabelaOrigem, linhaOrigem, tabelaAtiva, linhaAtiva);
                 }
                 arrastando = false; nomeArrastado = "";
-                TelaTaticas.this.getRootPane().getGlassPane().setVisible(false);
+                TelaSubstituicao.this.getRootPane().getGlassPane().setVisible(false);
                 repaintTodasTabelas();
             }
 
@@ -337,7 +338,7 @@ public class TelaTaticas extends JPanel {
             }
         };
 
-        for (JTable t : new JTable[]{tabelaTitulares, tabelaReservas, tabelaDisponiveis}) {
+        for (JTable t : new JTable[]{tabelaTitulares, tabelaReservas}) {
             t.addMouseListener(interacaoAdapter);
             t.addMouseMotionListener(interacaoAdapter);
         }
@@ -367,7 +368,7 @@ public class TelaTaticas extends JPanel {
     }
 
     private void repaintTodasTabelas() {
-        tabelaTitulares.repaint(); tabelaReservas.repaint(); tabelaDisponiveis.repaint();
+        tabelaTitulares.repaint(); tabelaReservas.repaint();
     }
 
     protected void executarSwap(JTable t1, int r1, JTable t2, int r2) {
@@ -407,12 +408,18 @@ public class TelaTaticas extends JPanel {
         return l;
     }
 
-    public void carregarTaticaInicial(List<Jogador> elenco) {
-        for (Jogador j : elenco) {
+    public void carregarTaticaInicial(List<Jogador> titulares, List<Jogador> reservas) {
+        // Loop 1: Titulares
+        for (Jogador j : titulares) {
             String n = "["+j.getPos()+"] "+j.getNome();
             if (j.getOrdem() <= 10) preencherLinha(modeloTitulares, j.getOrdem(), n, j);
-            else if (j.getOrdem() <= 16) preencherLinha(modeloReservas, j.getOrdem() - 11, n, j);
-            else { int l = j.getOrdem() - 17; if (l < 11) preencherLinha(modeloDisponiveis, l, n, j); }
+        }
+        // Loop 2: Reservas
+        for (Jogador j : reservas) {
+            String n = "["+j.getPos()+"] "+j.getNome();
+            if (j.getOrdem() >= 11 && j.getOrdem() <= 16) {
+                preencherLinha(modeloReservas, j.getOrdem() - 11, n, j);
+            }
         }
         calcularResumo();
     }
@@ -454,7 +461,6 @@ private void configurarVagasDinamicas() {
         if (r < 11) modeloTitulares.setValueAt("AT", r++, 1);
     }
         for(int i=0; i<6; i++) modeloReservas.setValueAt("RES", i, 1);
-        for(int i=0; i<11; i++) modeloDisponiveis.setValueAt("OUT", i, 1);
     }
 
     public void calcularResumo() {
@@ -505,6 +511,8 @@ private void configurarVagasDinamicas() {
         lblMediaOvr.setText("OVERALL: " + (int)baseOvr); // O potencial bruto do time permanece visível
     }
 
+
+
     private boolean estaForaDePosicao(String posTatica, String nomeJogador) {
         if (nomeJogador == null || !nomeJogador.contains("[") || !nomeJogador.contains("]")) return false;
         
@@ -513,14 +521,35 @@ private void configurarVagasDinamicas() {
         
         switch (posTatica) {
             case "GL": return !posNatural.equals("GL");
-            case "LD": 
-            case "LE": 
-            case "ZG": 
-                // Defensores podem jogar em qualquer vaga da zaga/lateral sem penalidade (opcional)
-                return !posNatural.equals("ZG") && !posNatural.equals("LD") && !posNatural.equals("LE");
+            case "LD": return !posNatural.equals("LD");
+            case "LE": return !posNatural.equals("LE");
+            case "ZG": return !posNatural.equals("ZG");
             case "MC": return !posNatural.equals("MC");
             case "AT": return !posNatural.equals("AT");
-            default: return false; // RES e OUT não aplicam penalidade visual aqui
+            default: return false; 
         }
+    }
+
+    public List<Integer> getIdsDosTitulares() {
+        List<Integer> ids = new java.util.ArrayList<>();
+        for (int i = 0; i < 11; i++) {
+            Object val = modeloTitulares.getValueAt(i, 0);
+            if (val instanceof Integer) {
+                ids.add((Integer) val);
+            }
+        }
+        return ids;
+    }
+
+    public List<Integer> getIdsDosReservas() {
+        List<Integer> ids = new java.util.ArrayList<>();
+        // O banco de reservas tem 6 linhas (0 a 5)
+        for (int i = 0; i < 6; i++) {
+            Object val = modeloReservas.getValueAt(i, 0);
+            if (val != null) {
+                ids.add((Integer) val);
+            }
+        }
+        return ids;
     }
 }

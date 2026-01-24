@@ -1,9 +1,10 @@
 package com.stack.engine;
 
-import com.stack.model.Jogador;
-import com.stack.repository.JogadorRepository;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.stack.model.Jogador;
+import com.stack.repository.JogadorRepository;
 
 public class MotorJogo {
     private List<Jogador> titularesCasa;
@@ -23,24 +24,18 @@ public class MotorJogo {
     private int minutos = 0;
     private int tempo = 1;
     private boolean pausado = false;
+    private String formacaoCasa;
+    private String posturaCasa;
     private final Object trava = new Object(); 
-
-    public List<Jogador> getTitularesCasa() {
-    return titularesCasa;
-    }
-
+    private JogadorRepository repo; 
+    public List<Jogador> getTitularesCasa() { return titularesCasa; }
     public List<Jogador> getTitularesVisitante() {
         return titularesVisitante;
     }
-
-        public List<Jogador> getReservasCasa() {
-    return titularesCasa;
-    }
-
+    public List<Jogador> getReservasCasa() { return reservasCasa; }
     public List<Jogador> getReservasVisitante() {
         return titularesVisitante;
     }
-
     public MotorJogo(int idCasa, int idVisitante) {
         this.idCasa = idCasa;
         this.idVisitante = idVisitante;
@@ -48,57 +43,67 @@ public class MotorJogo {
         this.titularesVisitante = new ArrayList<>();
         this.reservasCasa = new ArrayList<>();
         this.reservasVisitante = new ArrayList<>();
-        carregarEquipes();
+        this.repo = new JogadorRepository(); 
+        capturarDadosIniciais();
     }
 
-    private void carregarEquipes() {
-        // 1. Limpar a lista a cada loop para carregar dados atualizados
-        titularesCasa.clear();
-        titularesVisitante.clear();
-
-        // 2. Variáveis para as somas
-        somaTotalCasa = 0; 
-        somaTotalVis = 0; 
-        somaTotalCasa = 0;
-        somaAtqCasa = 0; 
-        somaAtqVis = 0; 
-        somaDefCasa = 0;
-        somaDefVis = 0;
-        
+    private void capturarDadosIniciais() {
         JogadorRepository repo = new JogadorRepository();
-        List<Jogador> todos = repo.carregarTodos();
-        
-        // 3. Loop para somar os valores de força
-        for (Jogador j : todos) {
+        List<Jogador> todosOsJogadoresDoBanco = repo.carregarTodos();
 
+        for (Jogador j : todosOsJogadoresDoBanco) {
+            // Verifica se o jogador pertence ao time da CASA
             if (j.getClube() == idCasa) {
                 if (j.getStatus() == 1) {
                     titularesCasa.add(j);
-                    // Soma apenas de quem está em campo
-                    somaAtqCasa += j.getAtaque();
-                    somaDefCasa += j.getDefesa();
-                    somaTotalCasa += j.getTotal();
-                } 
+            } else if (j.getStatus() == 2) {
+                reservasCasa.add(j);
+            }
             } 
+            // Verifica se o jogador pertence ao time VISITANTE
             else if (j.getClube() == idVisitante) {
                 if (j.getStatus() == 1) {
                     titularesVisitante.add(j);
-                    // Soma apenas de quem está em campo
-                    somaAtqVis += j.getAtaque();
-                    somaDefVis += j.getDefesa();
-                    somaTotalVis += j.getTotal();
-                } 
+            } else if (j.getStatus() == 2) {
+                    reservasVisitante.add(j);
+                }
             }
         }
 
-        System.out.println("FORÇA TIME CASA      | Atk: " + somaAtqCasa + " | Def: " + somaDefCasa + " | Total: " + somaTotalCasa);
-        System.out.println("FORÇA TIME VISITANTE | Atk: " + somaAtqVis + " | Def: " + somaDefVis + " | Total: " + somaTotalVis);
-        System.out.println("--------------------------------------------------------------------------");
-        System.out.println(placarCasa + " x " + placarVisitante);
+            com.stack.repository.DadosRepository dadosRepo = new com.stack.repository.DadosRepository();
+            java.util.Map<String, String> dadosGlobais = dadosRepo.carregarDados();
+
+            if (dadosGlobais != null && !dadosGlobais.isEmpty()) {
+                this.formacaoCasa = dadosGlobais.get("formacao");
+                this.posturaCasa = dadosGlobais.get("postura");
+            }
+
+            // Caso o mapa venha vazio (segurança), define um valor para não dar erro na tela
+            if (this.formacaoCasa == null) this.formacaoCasa = "4-4-2";
+            if (this.posturaCasa == null) this.posturaCasa = "Equilibrada";
+        recalcularForcaDasEquipes();
+    }
+
+    public void recalcularForcaDasEquipes() {
+        // Reseta as somas antes de contar
+        somaAtqCasa = 0; somaDefCasa = 0; somaTotalCasa = 0;
+        somaAtqVis = 0; somaDefVis = 0; somaTotalVis = 0;
+
+        // Soma apenas quem está nos arrays temporários de titulares
+        for (Jogador j : titularesCasa) {
+            somaAtqCasa += j.getAtaque();
+            somaDefCasa += j.getDefesa();
+            somaTotalCasa += j.getTotal();
+        }
+        for (Jogador j : titularesVisitante) {
+            somaAtqVis += j.getAtaque();
+            somaDefVis += j.getDefesa();
+            somaTotalVis += j.getTotal();
+        }
     }
 
     public int processarLance() {
-            carregarEquipes(); 
+            recalcularForcaDasEquipes();; 
 
             double dadoLance = Math.random() * 100;
             System.out.println(dadoLance);    
@@ -175,6 +180,18 @@ public class MotorJogo {
     public String getPlacarFormatado() {
         return placarCasa + " - " + placarVisitante;
     }
+    
+    public void atualizarEscalacao(List<Jogador> novosTitulares, List<Jogador> novosReservas, String novaFormacao, String novaPostura) {
+        synchronized (trava) { // Garante que não mude o time no meio de um processamento de lance
+            this.titularesCasa = novosTitulares;
+            this.reservasCasa = novosReservas;
+            this.formacaoCasa = novaFormacao;
+            this.posturaCasa = novaPostura;
+            
+            // Recalcula as forças após a mudança
+            recalcularForcaDasEquipes();
+        }
+    }
 
     public void iniciarCronometro() {
         new Thread(() -> {
@@ -245,6 +262,27 @@ public class MotorJogo {
             pausado = false;
             trava.notify(); // Acorda a Thread que está no wait()
         }
+    }
+
+    public JogadorRepository getRepo() {
+    return this.repo;
+    }
+
+    // Getters para as somas de atributos (Necessários para o log do Controller)
+    public int getSomaAtqCasa() { return somaAtqCasa; }
+    public int getSomaDefCasa() { return somaDefCasa; }
+    public int getSomaAtqVis()  { return somaAtqVis; }
+    public int getSomaDefVis()  { return somaDefVis; }
+    public int getSomaTotalCasa() { return somaTotalCasa; }
+    public int getSomaTotalVis() { return somaTotalVis; }
+
+    // Dentro da classe MotorJogo
+    public String getFormacaoCasa() {
+        return this.formacaoCasa; // Ou o nome da variável que você usa para "4-4-2"
+    }
+
+    public String getPosturaCasa() {
+        return this.posturaCasa; // Ou o nome da variável que você usa para "Ofensiva"
     }
 
 }

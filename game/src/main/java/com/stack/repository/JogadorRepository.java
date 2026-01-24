@@ -95,7 +95,6 @@ public class JogadorRepository {
 
                 pstmt.executeBatch();
                 conn.commit();
-                System.out.println("Elenco sincronizado com sucesso.");
             } catch (SQLException e) {
                 conn.rollback();
                 throw e;
@@ -104,4 +103,23 @@ public class JogadorRepository {
             System.err.println("Erro ao salvar estado completo: " + e.getMessage());
         }
     }
+
+    public Jogador buscarPorId(int id) {
+    String sql = "SELECT * FROM jogadores WHERE id = ?";
+        
+        try (Connection conn = DatabaseConfig.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, id);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return extrairJogador(rs);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Erro ao buscar jogador por ID: " + e.getMessage());
+        }
+        return null;
+    }
+
 }
