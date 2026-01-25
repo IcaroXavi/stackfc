@@ -154,7 +154,7 @@ public class TelaPartida extends JPanel {
             if (timer != null && !motor.getTempo().equals("Encerrada")) {
                 motor.pausarJogo();
             }
-            TelaSubstituicao painelSub = new TelaSubstituicao(motor.getTitularesCasa(), motor.getReservasCasa());
+            TelaSubstituicao painelSub = new TelaSubstituicao(motor.getTitularesCasa(), motor.getReservasCasa(), motor.getSubsRealizadasCasa(),!motor.getTempo().equals("PRÉ JOGO"));
             java.awt.Window parentWindow = SwingUtilities.getWindowAncestor(this);
             JDialog dialog = new JDialog(parentWindow, "Gerenciar Time", java.awt.Dialog.ModalityType.APPLICATION_MODAL);
             new SubstituicaoController(painelSub, motor, jogadorRepository, dialog);

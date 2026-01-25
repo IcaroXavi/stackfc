@@ -36,8 +36,8 @@ public class TelaSubstituicao extends JPanel {
     private DefaultTableModel modeloTitulares, modeloReservas;
     private JComboBox<String> comboFormacao, comboMentalidade;
     private JLabel lblMediaDef, lblMediaAtq, lblMediaOvr;
+    private JLabel lblContadorSubs;
     private JButton btnJogar, btnVoltar;
-
     private String nomeArrastado = "";
     private Point pontoMouseGlass = new Point(0, 0);
     private boolean arrastando = false;
@@ -54,9 +54,9 @@ public class TelaSubstituicao extends JPanel {
     private final Color COR_GLASS = new Color(60, 80, 160, 220);
     private final Color COR_CINZA_CLARO = new Color(130, 130, 130);
     private final Color COR_SILVER = new Color(200, 200, 200);
-    private int subsRealizadas = 0;
-    private final int MAX_SUBS = 5;
-    private JLabel lblContadorSubs;
+    private List<Integer> idsIniciaisSessao = new java.util.ArrayList<>();
+    private int subsJaGastas;
+    private boolean iniciado;
     public void atualizarConfiguracoes(String formacao, String postura) {
         if (formacao != null) comboFormacao.setSelectedItem(formacao);
         if (postura != null) comboMentalidade.setSelectedItem(postura);
@@ -67,9 +67,39 @@ public class TelaSubstituicao extends JPanel {
         calcularResumo();
     }
 
-    public TelaSubstituicao(List<Jogador> titulares, List<Jogador> reservas) {
-        this(); // Chama o construtor vazio para inicializar o layout/componentes
+    public TelaSubstituicao(List<Jogador> titulares, List<Jogador> reservas, int subsGastas, boolean jogoIniciado) {
+        this(); // Inicializa UI
+        this.subsJaGastas = subsGastas;
+        this.iniciado = jogoIniciado;
+        
+        // Memoriza quem está no campo AGORA (para detectar trocas reais)
+        for (int i = 0; i < titulares.size(); i++) {
+            idsIniciaisSessao.add(titulares.get(i).getId());
+        }
+
         carregarTaticaInicial(titulares, reservas);
+        atualizarLabelSubs();
+    }
+
+    public int calcularTotalSubsParaMotor() {
+        if (!iniciado) return 0; // Regra 1: Antes do jogo não conta nada
+        
+        int novas = 0;
+        List<Integer> atuais = getIdsDosTitulares();
+        for (Integer id : atuais) {
+            // Regra 2: Se o ID não estava na lista inicial, é uma sub nova
+            if (id != null && id != 0 && !idsIniciaisSessao.contains(id)) {
+                novas++;
+            }
+        }
+        return subsJaGastas + novas; // Regra 3: Soma com o que já foi gasto antes
+    }
+
+    private void atualizarLabelSubs() {
+        // Chamamos o cálculo para atualizar o texto visualmente
+        int total = calcularTotalSubsParaMotor();
+        lblContadorSubs.setText("SUBSTITUIÇÕES: " + total + " / 5");
+        lblContadorSubs.setForeground(total >= 5 ? COR_LARANJA : COR_AMARELO);
     }
 
     public TelaSubstituicao() {
@@ -123,6 +153,14 @@ public class TelaSubstituicao extends JPanel {
     JScrollPane spReservas = criarScroll(tabelaReservas, "BANCO DE RESERVAS");
     spReservas.setBounds(10, 340, 412, 152);
     add(spReservas);
+
+    // Contador de Substuições
+    lblContadorSubs = new JLabel("SUBSTITUIÇÕES: 0 / 5");
+    lblContadorSubs.setBounds(10, 500, 412, 30); 
+    lblContadorSubs.setForeground(COR_AMARELO);
+    lblContadorSubs.setFont(new Font("Segoe UI", Font.BOLD, 14));
+    lblContadorSubs.setHorizontalAlignment(JLabel.CENTER);
+    add(lblContadorSubs);
 
     // --- 3. RODAPÉ ---
     btnVoltar = criarBotaoBase("CANCELAR", new Color(60, 60, 70));
@@ -377,20 +415,21 @@ public class TelaSubstituicao extends JPanel {
         DefaultTableModel m1 = (DefaultTableModel) t1.getModel();
         DefaultTableModel m2 = (DefaultTableModel) t2.getModel();
         
-        // Trocamos a Coluna 0 (ID)
+        // 1. Trocamos a Coluna 0 (ID) - Essencial para a nova lógica de contagem
         Object tempId = m1.getValueAt(r1, 0);
         m1.setValueAt(m2.getValueAt(r2, 0), r1, 0);
         m2.setValueAt(tempId, r2, 0);
 
-        // PULAMOS A COLUNA 1 (A tática/RES/OUT permanece onde está)
-
-        // Trocamos da Coluna 2 até a 6 (Nome, Def, Atq, Ovr, Energia)
+        // 2. Trocamos da Coluna 2 até a 6 (Nome, Def, Atq, Ovr, Energia)
         for (int i = 2; i < 7; i++) { 
             Object temp = m1.getValueAt(r1, i);
             m1.setValueAt(m2.getValueAt(r2, i), r1, i);
             m2.setValueAt(temp, r2, i);
         }
-        calcularResumo();
+        
+        // 3. Atualiza as médias e o contador de substituições automaticamente
+        calcularResumo(); 
+        atualizarLabelSubs();
     }
 
     private DefaultTableModel criarModeloBloqueado(String[] col, int lin) {

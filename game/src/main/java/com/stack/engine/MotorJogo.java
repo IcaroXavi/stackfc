@@ -25,6 +25,7 @@ public class MotorJogo {
     private int placarVisitante = 0;
     private int minutos = 0;
     private int tempo = 1;
+    private int subsRealizadasCasa = 0;
     private boolean pausado = false;
     private String formacaoCasa;
     private String posturaCasa;
@@ -35,6 +36,14 @@ public class MotorJogo {
     public List<Jogador> getTitularesCasa() { return titularesCasa; }
     public List<Jogador> getTitularesVisitante() {
         return titularesVisitante;
+    }
+
+    public int getSubsRealizadasCasa() { 
+        return subsRealizadasCasa; 
+    }
+
+    public void setSubsRealizadasCasa(int qtd) { 
+        this.subsRealizadasCasa = qtd; 
     }
     public List<Jogador> getReservasCasa() { return reservasCasa; }
     public List<Jogador> getReservasVisitante() {
