@@ -29,7 +29,6 @@ public class SubstituicaoController {
         this.vista.getBtnJogar().addActionListener(e -> confirmarMudancas());
         this.vista.atualizarConfiguracoes(fAtual, pAtual);
         this.vista.getBtnVoltar().addActionListener(e -> dialog.dispose());
-        this.vista.getBtnJogar().addActionListener(e -> confirmarMudancas());
     }
 
     private void confirmarMudancas() {

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.stack.model.Jogador;
+import com.stack.model.TimeSnapshot;
 import com.stack.repository.JogadorRepository;
 
 public class MotorJogo {
@@ -13,6 +14,7 @@ public class MotorJogo {
     private List<Jogador> reservasVisitante;
     private int idCasa;
     private int idVisitante;
+    private TimeSnapshot dadosCasa; 
     private int somaTotalCasa = 0;
     private int somaTotalVis = 0;
     private int somaAtqCasa = 0;
@@ -28,13 +30,15 @@ public class MotorJogo {
     private String posturaCasa;
     private final Object trava = new Object(); 
     private JogadorRepository repo; 
+    private volatile TimeSnapshot snapshotCasa;
+    private volatile TimeSnapshot snapshotVisitante;
     public List<Jogador> getTitularesCasa() { return titularesCasa; }
     public List<Jogador> getTitularesVisitante() {
         return titularesVisitante;
     }
     public List<Jogador> getReservasCasa() { return reservasCasa; }
     public List<Jogador> getReservasVisitante() {
-        return titularesVisitante;
+        return reservasVisitante;
     }
     public MotorJogo(int idCasa, int idVisitante) {
         this.idCasa = idCasa;
@@ -45,6 +49,13 @@ public class MotorJogo {
         this.reservasVisitante = new ArrayList<>();
         this.repo = new JogadorRepository(); 
         capturarDadosIniciais();
+    }
+
+    public void configurarEquipes(TimeSnapshot snapshot) {
+        this.dadosCasa = snapshot;
+        
+        // Apenas para teste inicial, você pode imprimir no console:
+        System.out.println("Motor configurado com Ataque: " + snapshot.getAtaque());
     }
 
     private void capturarDadosIniciais() {
@@ -85,16 +96,23 @@ public class MotorJogo {
     }
 
     public void recalcularForcaDasEquipes() {
-        // Reseta as somas antes de contar
-        somaAtqCasa = 0; somaDefCasa = 0; somaTotalCasa = 0;
-        somaAtqVis = 0; somaDefVis = 0; somaTotalVis = 0;
-
-        // Soma apenas quem está nos arrays temporários de titulares
-        for (Jogador j : titularesCasa) {
-            somaAtqCasa += j.getAtaque();
-            somaDefCasa += j.getDefesa();
-            somaTotalCasa += j.getTotal();
+        // 1. Se o snapshot (dados vindos da Tela de Táticas) existir, use ele!
+        if (dadosCasa != null) {
+            somaAtqCasa = dadosCasa.getAtaque();
+            somaDefCasa = dadosCasa.getDefesa();
+            somaTotalCasa = dadosCasa.getOverall();
+        } else {
+            // Fallback: caso o snapshot não tenha sido injetado ainda
+            somaAtqCasa = 0; somaDefCasa = 0; somaTotalCasa = 0;
+            for (Jogador j : titularesCasa) {
+                somaAtqCasa += j.getAtaque();
+                somaDefCasa += j.getDefesa();
+                somaTotalCasa += j.getTotal();
+            }
         }
+
+        // 2. Para o visitante (que ainda é processado automaticamente), mantém a soma
+        somaAtqVis = 0; somaDefVis = 0; somaTotalVis = 0;
         for (Jogador j : titularesVisitante) {
             somaAtqVis += j.getAtaque();
             somaDefVis += j.getDefesa();
@@ -126,6 +144,9 @@ public class MotorJogo {
             else {
                 System.out.println("LANCE PERIGOSO");
                 double dadoPosse = Math.random() * (somaTotalCasa + somaTotalVis);
+                System.out.println("somaAtqCasa: " + somaAtqCasa + " somaDefCasa: " + somaDefCasa);
+                System.out.println("somaAtqVis: " + somaAtqVis + " somaDefVis: " + somaDefVis);
+                System.out.println("somaTotalCasa: " + somaTotalCasa + " somaTotalVisitante: " + somaTotalVis);
                 if (dadoPosse < somaTotalCasa) {
                 System.out.println(dadoPosse + " ataque do time da casa");
                     return posseCasa();
@@ -284,5 +305,6 @@ public class MotorJogo {
     public String getPosturaCasa() {
         return this.posturaCasa; // Ou o nome da variável que você usa para "Ofensiva"
     }
+    
 
 }

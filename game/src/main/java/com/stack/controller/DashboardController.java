@@ -102,8 +102,9 @@ public class DashboardController {
                 coletarDadosTabela(tela.getTabelaDisponiveis(), 17, mapaEstadoCompleto);
 
                 new JogadorRepository().salvarEstadoCompleto(mapaEstadoCompleto);
-
+                com.stack.model.TimeSnapshot snapshotCasa = tela.getSnapshotAtual();
                 com.stack.engine.MotorJogo novoMotor = new com.stack.engine.MotorJogo(1, 2);
+                novoMotor.configurarEquipes(snapshotCasa);
                 view.iniciarNovaPartida(novoMotor);
             });
         }

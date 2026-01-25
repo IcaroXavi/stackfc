@@ -54,7 +54,9 @@ public class TelaSubstituicao extends JPanel {
     private final Color COR_GLASS = new Color(60, 80, 160, 220);
     private final Color COR_CINZA_CLARO = new Color(130, 130, 130);
     private final Color COR_SILVER = new Color(200, 200, 200);
-
+    private int subsRealizadas = 0;
+    private final int MAX_SUBS = 5;
+    private JLabel lblContadorSubs;
     public void atualizarConfiguracoes(String formacao, String postura) {
         if (formacao != null) comboFormacao.setSelectedItem(formacao);
         if (postura != null) comboMentalidade.setSelectedItem(postura);
@@ -124,11 +126,11 @@ public class TelaSubstituicao extends JPanel {
 
     // --- 3. RODAPÉ ---
     btnVoltar = criarBotaoBase("CANCELAR", new Color(60, 60, 70));
-    btnVoltar.setBounds(12, 520, 190, 30);
+    btnVoltar.setBounds(12, 620, 190, 30);
     add(btnVoltar);
 
     btnJogar = criarBotaoBase("CONFIRMAR E JOGAR", new Color(0, 120, 60));
-    btnJogar.setBounds(230, 520, 190, 30);
+    btnJogar.setBounds(230, 620, 190, 30);
     add(btnJogar);
 
     configurarVagasDinamicas();
@@ -551,5 +553,19 @@ private void configurarVagasDinamicas() {
             }
         }
         return ids;
+    }
+
+    public com.stack.model.TimeSnapshot getSnapshotAtual() {
+        try {
+            // Removemos o texto (ex: "ATAQUE: ") e pegamos apenas os números
+            int def = Integer.parseInt(lblMediaDef.getText().replaceAll("[^0-9]", ""));
+            int atq = Integer.parseInt(lblMediaAtq.getText().replaceAll("[^0-9]", ""));
+            int ovr = Integer.parseInt(lblMediaOvr.getText().replaceAll("[^0-9]", ""));
+            
+            return new com.stack.model.TimeSnapshot(atq, def, ovr);
+        } catch (Exception e) {
+            // Se algo falhar (ex: label vazio), retorna um valor seguro
+            return new com.stack.model.TimeSnapshot(0, 0, 0);
+        }
     }
 }

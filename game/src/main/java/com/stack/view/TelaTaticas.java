@@ -513,14 +513,26 @@ private void configurarVagasDinamicas() {
         
         switch (posTatica) {
             case "GL": return !posNatural.equals("GL");
-            case "LD": 
-            case "LE": 
-            case "ZG": 
-                // Defensores podem jogar em qualquer vaga da zaga/lateral sem penalidade (opcional)
-                return !posNatural.equals("ZG") && !posNatural.equals("LD") && !posNatural.equals("LE");
+            case "LD": return !posNatural.equals("LD");
+            case "LE": return !posNatural.equals("LE");
+            case "ZG": return !posNatural.equals("ZG");
             case "MC": return !posNatural.equals("MC");
             case "AT": return !posNatural.equals("AT");
-            default: return false; // RES e OUT não aplicam penalidade visual aqui
+            default: return false; 
         }
+    }
+
+    public com.stack.model.TimeSnapshot getSnapshotAtual() {
+        try {
+            // Removemos o texto (ex: "ATAQUE: ") e pegamos apenas os números
+            int def = Integer.parseInt(lblMediaDef.getText().replaceAll("[^0-9]", ""));
+            int atq = Integer.parseInt(lblMediaAtq.getText().replaceAll("[^0-9]", ""));
+            int ovr = Integer.parseInt(lblMediaOvr.getText().replaceAll("[^0-9]", ""));
+            
+            return new com.stack.model.TimeSnapshot(atq, def, ovr);
+        } catch (Exception e) {
+            // Se algo falhar (ex: label vazio), retorna um valor seguro
+            return new com.stack.model.TimeSnapshot(0, 0, 0);
+     }
     }
 }
